@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="obsidian_background">#FF050608</color>
+    <color name="obsidian_smoked_surface">#C70D0F15</color>
+    <color name="obsidian_youtube_red">#FFFF0033</color>
+
+    <string name="pref_theme_obsidian_smoked">Obsidian Smoked Glass (OLED)</string>
+
+    <style name="Theme.Jellyfin.ObsidianSmoked" parent="Theme.Jellyfin">
+        <item name="android:windowBackground">@color/obsidian_background</item>
+        <item name="android:colorBackground">@color/obsidian_background</item>
+        <item name="colorPrimary">@color/obsidian_youtube_red</item>
+        <item name="colorAccent">@color/obsidian_youtube_red</item>
+        <item name="defaultBrandColor">@color/obsidian_smoked_surface</item>
+        <item name="defaultBrandColorDark">@color/obsidian_background</item>
+    </style>
+</resources>
