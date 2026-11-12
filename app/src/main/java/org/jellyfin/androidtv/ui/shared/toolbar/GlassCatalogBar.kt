@@ -21,10 +21,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -102,21 +105,24 @@ private fun GlassCatalogTab(
 ) {
 	val barShape = RoundedCornerShape(40.dp)
 	val contentAlpha = if (enabled) 1f else 0.45f
+	var isFocused by remember { mutableStateOf(false) }
+	val isActive = selected || isFocused
 
 	Box(
 		modifier = Modifier
 			.clip(barShape)
 			.background(
-				if (selected) Color.White.copy(alpha = 0.20f)
+				if (isActive) Color.White.copy(alpha = 0.20f)
 				else Color.Transparent
 			)
 			.then(
-				if (selected) Modifier.border(
-					1.dp,
-					Color(0xFF60A5FA).copy(alpha = 0.90f),
+				if (isActive) Modifier.border(
+					2.dp,
+					Color(0xFF3B82F6),
 					barShape
 				) else Modifier
 			)
+			.onFocusChanged { focusState -> isFocused = focusState.hasFocus }
 			.clickable(enabled = enabled, onClick = onClick)
 			.padding(horizontal = 8.dp, vertical = 6.dp)
 	) {
@@ -244,13 +250,6 @@ fun HomeStatusBar() {
 			enabled = userViews.any { it.collectionType == CollectionType.BOXSETS },
 			onClick = { openLibrary(CollectionType.BOXSETS) }
 		)
-		GlassCatalogTab(
-			title = "Избранное",
-			icon = ImageVector.vectorResource(R.drawable.ic_heart),
-			selected = false,
-			onClick = { navigationRepository.navigate(Destinations.favorites) }
-		)
-
 		Spacer(Modifier.width(4.dp))
 
 		GlassIconButton(

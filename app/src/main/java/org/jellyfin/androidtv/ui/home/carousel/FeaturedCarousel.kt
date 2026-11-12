@@ -4,10 +4,11 @@ import android.widget.ImageView
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -50,8 +51,6 @@ import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.ui.base.Icon
 import org.jellyfin.androidtv.ui.base.JellyfinTheme
 import org.jellyfin.androidtv.ui.base.Text
-import org.jellyfin.androidtv.ui.base.button.Button
-import org.jellyfin.androidtv.ui.base.button.ButtonDefaults
 import org.jellyfin.androidtv.ui.composable.AsyncImage
 import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
@@ -108,6 +107,7 @@ fun FeaturedCarousel(modifier: Modifier = Modifier) {
 			onWatchNow = { navigationRepository.navigate(Destinations.itemDetails(currentItem.id)) },
 			onPrevious = { currentIndex = if (currentIndex == 0) items.size - 1 else currentIndex - 1 },
 			onNext = { currentIndex = (currentIndex + 1) % items.size },
+			watchNowFocused = isWatchNowFocused,
 			onWatchNowFocusChanged = { focused -> isWatchNowFocused = focused },
 			modifier = Modifier.fillMaxSize()
 		)
@@ -192,6 +192,7 @@ private fun CarouselForeground(
 	onWatchNow: () -> Unit,
 	onPrevious: () -> Unit,
 	onNext: () -> Unit,
+	watchNowFocused: Boolean,
 	onWatchNowFocusChanged: (Boolean) -> Unit,
 	modifier: Modifier = Modifier,
 ) {
@@ -255,18 +256,21 @@ private fun CarouselForeground(
 				)
 			}
 
-			Button(
-				onClick = onWatchNow,
-				shape = RoundedCornerShape(14.dp),
-				colors = ButtonDefaults.colors(
-					containerColor = Color.White.copy(alpha = 0.85f),
-					contentColor = Color.Black,
-					focusedContainerColor = Color.White,
-					focusedContentColor = Color.Black
-				),
-				contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+			val watchNowShape = RoundedCornerShape(40.dp)
+			Box(
 				modifier = Modifier
 					.padding(top = 4.dp)
+					.clip(watchNowShape)
+					.background(
+						if (watchNowFocused) Color.White.copy(alpha = 0.20f)
+						else Color.White.copy(alpha = 0.08f)
+					)
+					.border(
+						width = if (watchNowFocused) 2.dp else 1.dp,
+						color = if (watchNowFocused) Color(0xFF3B82F6)
+						else Color.White.copy(alpha = 0.12f),
+						shape = watchNowShape
+					)
 					.onFocusChanged { focusState -> onWatchNowFocusChanged(focusState.hasFocus) }
 					.onKeyEvent { keyEvent ->
 						if (keyEvent.type != KeyEventType.KeyDown) return@onKeyEvent false
@@ -285,17 +289,23 @@ private fun CarouselForeground(
 							else -> false
 						}
 					}
+					.clickable(onClick = onWatchNow)
+					.padding(horizontal = 16.dp, vertical = 8.dp)
 			) {
-				Icon(
-					imageVector = ImageVector.vectorResource(R.drawable.ic_play),
-					contentDescription = null
-				)
-				Spacer(Modifier.width(8.dp))
-				Text(
-					text = stringResource(R.string.watch_now),
-					fontSize = 14.sp,
-					fontWeight = FontWeight.SemiBold
-				)
+				Row(verticalAlignment = Alignment.CenterVertically) {
+					Icon(
+						imageVector = ImageVector.vectorResource(R.drawable.ic_play),
+						contentDescription = null,
+						tint = Color.White
+					)
+					Spacer(Modifier.width(6.dp))
+					Text(
+						text = stringResource(R.string.watch_now),
+						color = Color.White,
+						fontSize = 14.sp,
+						fontWeight = FontWeight.SemiBold
+					)
+				}
 			}
 		}
 	}

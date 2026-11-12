@@ -6,6 +6,13 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.zIndex
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
@@ -28,6 +35,7 @@ import org.jellyfin.androidtv.ui.composable.compat.AppNavigationHost
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
 import org.jellyfin.androidtv.ui.screensaver.InAppScreensaver
 import org.jellyfin.androidtv.ui.settings.compat.MainActivitySettings
+import org.jellyfin.androidtv.ui.shared.toolbar.HomeStatusBar
 import org.jellyfin.androidtv.ui.startup.StartupActivity
 import org.jellyfin.androidtv.util.applyTheme
 import org.koin.android.ext.android.inject
@@ -67,12 +75,25 @@ class MainActivity : FragmentActivity() {
 				ProvideLocalInteractionTracker(
 					interactionTracker = { interactionTrackerViewModel.notifyInteraction(false, userInitiated = true) }
 				) {
-					AppBackground()
-					AppNavigationHost(
-						navigationRepository = navigationRepository,
-					)
-					InAppScreensaver()
-					MainActivitySettings()
+					Box(modifier = Modifier.fillMaxSize()) {
+						AppBackground()
+						AppNavigationHost(
+							navigationRepository = navigationRepository,
+						)
+
+						val statusBarMargin = with(LocalDensity.current) { 20.toDp() }
+						Box(
+							modifier = Modifier
+								.align(Alignment.TopEnd)
+								.zIndex(1f)
+								.padding(top = statusBarMargin, end = statusBarMargin)
+						) {
+							HomeStatusBar()
+						}
+
+						InAppScreensaver()
+						MainActivitySettings()
+					}
 				}
 			}
 		}
