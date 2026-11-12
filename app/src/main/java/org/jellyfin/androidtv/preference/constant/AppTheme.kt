@@ -12,12 +12,17 @@ enum class AppTheme(
 	DARK(R.string.pref_theme_dark),
 
 	/**
-	 * The "classic" emerald theme
+	 * The emerald theme
 	 */
 	EMERALD(R.string.pref_theme_emerald),
 
 	/**
-	 * A theme with a more muted accent color, inspired by CTalvio's Monochromic CSS theme for Jellyfin Web
+	 * The muted purple theme
 	 */
 	MUTED_PURPLE(R.string.pref_theme_muted_purple),
+
+	/**
+	 * Тема №3: Obsidian Smoked Glass (OLED Theater + Rim Light + YouTube Red Seekbar)
+	 */
+	OBSIDIAN_SMOKED(R.string.pref_theme_obsidian_smoked),
 }
