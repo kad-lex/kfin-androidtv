@@ -7,16 +7,19 @@ import android.view.ViewGroup
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.zIndex
 import androidx.fragment.app.Fragment
 import androidx.fragment.compose.AndroidFragment
@@ -31,8 +34,7 @@ import org.jellyfin.androidtv.auth.repository.ServerRepository
 import org.jellyfin.androidtv.auth.repository.SessionRepository
 import org.jellyfin.androidtv.data.repository.NotificationsRepository
 import org.jellyfin.androidtv.ui.home.carousel.FeaturedCarousel
-import org.jellyfin.androidtv.ui.shared.toolbar.MainToolbar
-import org.jellyfin.androidtv.ui.shared.toolbar.MainToolbarActiveButton
+import org.jellyfin.androidtv.ui.shared.toolbar.HomeStatusBar
 import org.koin.android.ext.android.inject
 
 class HomeFragment : Fragment() {
@@ -51,8 +53,15 @@ class HomeFragment : Fragment() {
 		Column {
 			Box {
 				FeaturedCarousel()
-				Box(modifier = Modifier.zIndex(1f)) {
-					MainToolbar(MainToolbarActiveButton.Home)
+
+				val statusBarMargin = with(LocalDensity.current) { 20.toDp() }
+				Box(
+					modifier = Modifier
+						.align(Alignment.TopEnd)
+						.zIndex(1f)
+						.padding(top = statusBarMargin, end = statusBarMargin)
+				) {
+					HomeStatusBar()
 				}
 			}
 

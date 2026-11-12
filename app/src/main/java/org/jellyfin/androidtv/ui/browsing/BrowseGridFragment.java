@@ -548,6 +548,11 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
     }
 
     private void setupQueries() {
+        if (getArguments().getBoolean(Extras.Favorites, false)) {
+            setRowDef(new BrowseRowDef("", BrowsingUtils.createFavoritesRequest(), CHUNK_SIZE_MINIMUM, new ChangeTriggerType[]{}));
+            return;
+        }
+
         if (mFolder.getType() == BaseItemKind.USER_VIEW || mFolder.getType() == BaseItemKind.COLLECTION_FOLDER) {
             CollectionType type = mFolder.getCollectionType() != null ? mFolder.getCollectionType() : CollectionType.UNKNOWN;
             if (type == CollectionType.MUSIC) {

@@ -307,6 +307,25 @@ object BrowsingUtils {
 	)
 
 	@JvmStatic
+	fun createFavoritesRequest() = GetItemsRequest(
+		fields = ItemRepository.itemFields,
+		includeItemTypes = setOf(
+			BaseItemKind.MOVIE,
+			BaseItemKind.SERIES,
+			BaseItemKind.EPISODE,
+			BaseItemKind.MUSIC_ALBUM,
+			BaseItemKind.AUDIO,
+			BaseItemKind.BOX_SET
+		),
+		recursive = true,
+		imageTypeLimit = 1,
+		filters = setOf(ItemFilter.IS_FAVORITE),
+		sortBy = setOf(ItemSortBy.SORT_NAME),
+		sortOrder = setOf(SortOrder.ASCENDING),
+		enableTotalRecordCount = false
+	)
+
+	@JvmStatic
 	fun createBrowseGridItemsRequest(parent: BaseItemDto): GetItemsRequest {
 		val baseRequest = GetItemsRequest(
 			fields = ItemRepository.itemFields,

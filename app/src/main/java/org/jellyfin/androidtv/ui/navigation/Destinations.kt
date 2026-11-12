@@ -24,6 +24,8 @@ import org.jellyfin.androidtv.ui.player.photo.PhotoPlayerFragment
 import org.jellyfin.androidtv.ui.player.video.VideoPlayerFragment
 import org.jellyfin.androidtv.ui.search.SearchFragment
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.CollectionType
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SeriesTimerInfoDto
 import org.jellyfin.sdk.model.api.SortOrder
@@ -44,6 +46,22 @@ object Destinations {
 			putString(Extras.Folder, Json.encodeToString(item))
 			putString(Extras.IncludeType, includeType)
 		}
+
+	val favorites = fragmentDestination<BrowseGridFragment> {
+		putString(
+			Extras.Folder,
+			Json.encodeToString(
+				BaseItemDto(
+					id = UUID(0L, 0L),
+					name = "Избранное",
+					type = BaseItemKind.COLLECTION_FOLDER,
+					collectionType = CollectionType.UNKNOWN,
+					displayPreferencesId = "favorites"
+				)
+			)
+		)
+		putBoolean(Extras.Favorites, true)
+	}
 
 	// TODO only pass item id instead of complete JSON to browsing destinations
 	fun librarySmartScreen(item: BaseItemDto) = fragmentDestination<BrowseViewFragment> {
