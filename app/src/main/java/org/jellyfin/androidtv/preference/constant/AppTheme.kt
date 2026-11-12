@@ -20,4 +20,9 @@ enum class AppTheme(
 	 * A theme with a more muted accent color, inspired by CTalvio's Monochromic CSS theme for Jellyfin Web
 	 */
 	MUTED_PURPLE(R.string.pref_theme_muted_purple),
+	/**
+	 * A theme with smoke glass 
+	 */
+OBSIDIAN_SMOKED(R.string.pref_theme_obsidian_smoked),
+ 
 }
