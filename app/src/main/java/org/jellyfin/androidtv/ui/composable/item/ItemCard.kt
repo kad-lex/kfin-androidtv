@@ -23,7 +23,7 @@ fun ItemCard(
 	shape: Shape = JellyfinTheme.shapes.medium,
 	focused: Boolean = false,
 ) {
-	val focusBorderWidth = with(LocalDensity.current) { 3.toDp() }
+	val focusBorderWidth = with(LocalDensity.current) { 6.toDp() }
 
 	Box(
 		modifier = modifier
