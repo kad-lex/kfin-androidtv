@@ -6,17 +6,20 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 import androidx.fragment.compose.AndroidFragment
 import androidx.fragment.compose.content
@@ -42,37 +45,47 @@ class HomeFragment : Fragment() {
 		container: ViewGroup?,
 		savedInstanceState: Bundle?
 	) = content {
+		val carouselFocusRequester = remember { FocusRequester() }
 		val rowsFocusRequester = remember { FocusRequester() }
-		LaunchedEffect(rowsFocusRequester) { rowsFocusRequester.requestFocus() }
+		var focusCarousel by remember { mutableStateOf(false) }
+		var focusRows by remember { mutableStateOf(false) }
 
-		Column {
-			Box {
-				FeaturedCarousel()
+		LaunchedEffect(focusCarousel) {
+			if (focusCarousel) {
+				carouselFocusRequester.requestFocus()
+				focusCarousel = false
 			}
+		}
+		LaunchedEffect(focusRows) {
+			if (focusRows) {
+				rowsFocusRequester.requestFocus()
+				focusRows = false
+			}
+		}
 
-			// The leanback code has its own awful focus handling that doesn't work properly with Compose view inteop to workaround this
-			// issue we add custom behavior that only allows focus exit when the current selected row is the first one. Additionally when
-			// we do switch the focus, we reset the leanback state so it won't cause weird behavior when focus is regained
-			var rowsSupportFragment by remember { mutableStateOf<HomeRowsFragment?>(null) }
+		val carouselHeight = 280.dp
+		val backgroundExtraHeight = with(LocalDensity.current) { 50.toDp() }
+
+		FeaturedCarousel(
+			modifier = Modifier.fillMaxSize(),
+			backgroundModifier = Modifier
+				.fillMaxWidth()
+				.height(carouselHeight + backgroundExtraHeight),
+			foregroundModifier = Modifier
+				.fillMaxWidth()
+				.height(carouselHeight),
+			focusRequester = carouselFocusRequester,
+			onMoveDown = { focusRows = true }
+		) {
 			AndroidFragment<HomeRowsFragment>(
 				modifier = Modifier
-					.weight(1f)
+					.fillMaxSize()
+					.padding(top = carouselHeight)
 					.focusGroup()
-					.focusRequester(rowsFocusRequester)
-					.focusProperties {
-						onExit = {
-							val isFirstRowSelected = rowsSupportFragment?.selectedPosition?.let { it <= 0 } ?: false
-							if (requestedFocusDirection != FocusDirection.Up || !isFirstRowSelected) {
-								cancelFocusChange()
-							} else {
-								rowsSupportFragment?.selectedPosition = 0
-								rowsSupportFragment?.verticalGridView?.clearFocus()
-							}
-						}
-					},
+					.focusRequester(rowsFocusRequester),
 				maxLifecycle = Lifecycle.State.RESUMED,
 				onUpdate = { fragment ->
-					rowsSupportFragment = fragment
+					fragment.onFocusCarousel = { focusCarousel = true }
 				}
 			)
 		}

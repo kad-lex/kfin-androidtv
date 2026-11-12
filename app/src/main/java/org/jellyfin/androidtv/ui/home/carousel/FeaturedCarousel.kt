@@ -29,6 +29,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -44,12 +46,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.ui.base.Icon
-import org.jellyfin.androidtv.ui.base.JellyfinTheme
 import org.jellyfin.androidtv.ui.base.Text
 import org.jellyfin.androidtv.ui.composable.AsyncImage
 import org.jellyfin.androidtv.ui.navigation.Destinations
@@ -66,7 +68,14 @@ import org.koin.compose.koinInject
 import timber.log.Timber
 
 @Composable
-fun FeaturedCarousel(modifier: Modifier = Modifier) {
+fun FeaturedCarousel(
+	modifier: Modifier = Modifier,
+	backgroundModifier: Modifier = Modifier,
+	foregroundModifier: Modifier = Modifier,
+	focusRequester: FocusRequester,
+	onMoveDown: () -> Unit,
+	content: @Composable () -> Unit = {},
+) {
 	val api = koinInject<ApiClient>()
 	val navigationRepository = koinInject<NavigationRepository>()
 	var items by remember { mutableStateOf(emptyList<FeaturedCarouselItem>()) }
@@ -74,10 +83,21 @@ fun FeaturedCarousel(modifier: Modifier = Modifier) {
 	LaunchedEffect(api) {
 		items = withContext(Dispatchers.IO) { loadFeaturedItems(api) }
 	}
-	if (items.isEmpty()) return
+	if (items.isEmpty()) {
+		Box(modifier = modifier) {
+			Box(modifier = Modifier.zIndex(1f)) {
+				content()
+			}
+		}
+		return
+	}
 
 	var currentIndex by remember(items) { mutableIntStateOf(0) }
 	var isWatchNowFocused by remember { mutableStateOf(false) }
+
+	LaunchedEffect(items.size) {
+		if (items.isNotEmpty()) focusRequester.requestFocus()
+	}
 
 	LaunchedEffect(currentIndex, isWatchNowFocused, items.size) {
 		if (items.size > 1 && !isWatchNowFocused) {
@@ -88,35 +108,40 @@ fun FeaturedCarousel(modifier: Modifier = Modifier) {
 
 	val currentItem = items[currentIndex.coerceIn(items.indices)]
 
-	Box(
-		modifier = modifier
-			.fillMaxWidth()
-			.height(280.dp)
-			.clip(RoundedCornerShape(16.dp))
-	) {
-		Crossfade(
-			targetState = currentItem,
-			animationSpec = tween(durationMillis = 500),
-			label = "featuredCarousel"
-		) { item ->
-			CarouselSlide(item = item)
+	Box(modifier = modifier) {
+		Box(modifier = backgroundModifier) {
+			Crossfade(
+				targetState = currentItem,
+				animationSpec = tween(durationMillis = 500),
+				label = "featuredCarousel"
+			) { item ->
+				CarouselSlide(item = item)
+			}
 		}
 
-		CarouselForeground(
-			item = currentItem,
-			onWatchNow = { navigationRepository.navigate(Destinations.itemDetails(currentItem.id)) },
-			onPrevious = { currentIndex = if (currentIndex == 0) items.size - 1 else currentIndex - 1 },
-			onNext = { currentIndex = (currentIndex + 1) % items.size },
-			watchNowFocused = isWatchNowFocused,
-			onWatchNowFocusChanged = { focused -> isWatchNowFocused = focused },
-			modifier = Modifier.fillMaxSize()
-		)
+		Box(modifier = Modifier.zIndex(1f)) {
+			content()
+		}
 
-		CarouselIndicator(
-			itemCount = items.size,
-			activeIndex = currentIndex,
-			modifier = Modifier.align(Alignment.BottomEnd)
-		)
+		Box(modifier = foregroundModifier.zIndex(2f)) {
+			CarouselForeground(
+				item = currentItem,
+				onWatchNow = { navigationRepository.navigate(Destinations.itemDetails(currentItem.id)) },
+				onPrevious = { currentIndex = if (currentIndex == 0) items.size - 1 else currentIndex - 1 },
+				onNext = { currentIndex = (currentIndex + 1) % items.size },
+				watchNowFocused = isWatchNowFocused,
+				onWatchNowFocusChanged = { focused -> isWatchNowFocused = focused },
+				focusRequester = focusRequester,
+				onMoveDown = onMoveDown,
+				modifier = Modifier.fillMaxSize()
+			)
+
+			CarouselIndicator(
+				itemCount = items.size,
+				activeIndex = currentIndex,
+				modifier = Modifier.align(Alignment.BottomEnd)
+			)
+		}
 	}
 }
 
@@ -194,6 +219,8 @@ private fun CarouselForeground(
 	onNext: () -> Unit,
 	watchNowFocused: Boolean,
 	onWatchNowFocusChanged: (Boolean) -> Unit,
+	focusRequester: FocusRequester,
+	onMoveDown: () -> Unit,
 	modifier: Modifier = Modifier,
 ) {
 	Box(
@@ -260,6 +287,7 @@ private fun CarouselForeground(
 			Box(
 				modifier = Modifier
 					.padding(top = 4.dp)
+					.focusRequester(focusRequester)
 					.clip(watchNowShape)
 					.background(
 						if (watchNowFocused) Color.White.copy(alpha = 0.20f)
@@ -267,7 +295,7 @@ private fun CarouselForeground(
 					)
 					.border(
 						width = if (watchNowFocused) 2.dp else 1.dp,
-						color = if (watchNowFocused) Color(0xFF3B82F6)
+						color = if (watchNowFocused) Color(0xFFF8FAFC)
 						else Color.White.copy(alpha = 0.12f),
 						shape = watchNowShape
 					)
@@ -283,6 +311,11 @@ private fun CarouselForeground(
 
 							Key.DirectionRight -> {
 								onNext()
+								true
+							}
+
+							Key.DirectionDown -> {
+								onMoveDown()
 								true
 							}
 
@@ -332,7 +365,7 @@ private fun CarouselIndicator(
 					.width(if (isActive) 20.dp else 6.dp)
 					.clip(CircleShape)
 					.background(
-						if (isActive) JellyfinTheme.colorScheme.rangeControlFill
+						if (isActive) Color.White
 						else Color.White.copy(alpha = 0.35f)
 					)
 			)

@@ -82,6 +82,7 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 	private var currentItem: BaseRowItem? = null
 	private var currentRow: ListRow? = null
 	private var justLoaded = true
+	var onFocusCarousel: (() -> Unit)? = null
 
 	// Special rows
 	private val notificationsRow by lazy { NotificationsHomeFragmentRow(lifecycleScope, notificationsRepository) }
@@ -179,6 +180,30 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 
 		// Subscribe to Audio messages
 		mediaManager.addAudioEventListener(this)
+	}
+
+	override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+		super.onViewCreated(view, savedInstanceState)
+
+		verticalGridView?.setOnKeyListener { _, keyCode, event ->
+			if (event?.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+				when {
+					selectedPosition > 0 -> {
+						selectedPosition = selectedPosition - 1
+						true
+					}
+
+					selectedPosition == 0 -> {
+						onFocusCarousel?.invoke()
+						true
+					}
+
+					else -> false
+				}
+			} else {
+				false
+			}
+		}
 	}
 
 	override fun onKey(v: View?, keyCode: Int, event: KeyEvent?): Boolean {

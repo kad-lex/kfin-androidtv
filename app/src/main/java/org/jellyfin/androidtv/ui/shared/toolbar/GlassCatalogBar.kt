@@ -97,7 +97,7 @@ fun GlassCatalogBar(
 
 @Composable
 private fun GlassCatalogTab(
-	title: String,
+	title: String?,
 	icon: ImageVector,
 	selected: Boolean,
 	enabled: Boolean = true,
@@ -118,7 +118,7 @@ private fun GlassCatalogTab(
 			.then(
 				if (isActive) Modifier.border(
 					2.dp,
-					Color(0xFF3B82F6),
+					Color(0xFFF8FAFC),
 					barShape
 				) else Modifier
 			)
@@ -126,24 +126,33 @@ private fun GlassCatalogTab(
 			.clickable(enabled = enabled, onClick = onClick)
 			.padding(horizontal = 8.dp, vertical = 6.dp)
 	) {
-		Row(
-			verticalAlignment = Alignment.CenterVertically,
-			horizontalArrangement = Arrangement.spacedBy(6.dp)
-		) {
+		if (title == null) {
 			Icon(
 				imageVector = icon,
 				contentDescription = null,
 				tint = Color.White.copy(alpha = contentAlpha),
-				modifier = Modifier.size(16.dp)
+				modifier = Modifier.size(18.dp)
 			)
-			Text(
-				text = title,
-				color = Color.White.copy(alpha = contentAlpha),
-				fontSize = 13.sp,
-				fontWeight = FontWeight.Bold,
-				maxLines = 1,
-				softWrap = false
-			)
+		} else {
+			Row(
+				verticalAlignment = Alignment.CenterVertically,
+				horizontalArrangement = Arrangement.spacedBy(6.dp)
+			) {
+				Icon(
+					imageVector = icon,
+					contentDescription = null,
+					tint = Color.White.copy(alpha = contentAlpha),
+					modifier = Modifier.size(16.dp)
+				)
+				Text(
+					text = title,
+					color = Color.White.copy(alpha = contentAlpha),
+					fontSize = 13.sp,
+					fontWeight = FontWeight.Bold,
+					maxLines = 1,
+					softWrap = false
+				)
+			}
 		}
 	}
 }
@@ -224,9 +233,9 @@ fun HomeStatusBar() {
 		}
 
 		GlassCatalogTab(
-			title = stringResource(R.string.lbl_home),
+			title = null,
 			icon = ImageVector.vectorResource(R.drawable.ic_house),
-			selected = true,
+			selected = false,
 			onClick = { navigationRepository.navigate(Destinations.home, replace = true) }
 		)
 		GlassCatalogTab(
