@@ -152,7 +152,7 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
         mCardFocusScale = getResources().getFraction(R.fraction.card_scale_focus, 1, 1);
 
         if (mGridDirection.equals(GridDirection.VERTICAL))
-            setGridPresenter(new VerticalGridPresenter(FocusHighlight.ZOOM_FACTOR_LARGE, false));
+            setGridPresenter(new VerticalGridPresenter(FocusHighlight.ZOOM_FACTOR_NONE, false));
         else
             setGridPresenter(new HorizontalGridPresenter());
 
@@ -582,7 +582,7 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
             mGridDirection = gridDirection;
 
             if (mGridDirection.equals(GridDirection.VERTICAL) && (mGridPresenter == null || !(mGridPresenter instanceof VerticalGridPresenter))) {
-                setGridPresenter(new VerticalGridPresenter(FocusHighlight.ZOOM_FACTOR_LARGE, false));
+                setGridPresenter(new VerticalGridPresenter(FocusHighlight.ZOOM_FACTOR_NONE, false));
             } else if (mGridDirection.equals(GridDirection.HORIZONTAL) && (mGridPresenter == null || !(mGridPresenter instanceof HorizontalGridPresenter))) {
                 setGridPresenter(new HorizontalGridPresenter());
             }
