@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,9 +47,8 @@ class HomeFragment : Fragment() {
 		savedInstanceState: Bundle?
 	) = content {
 		val carouselFocusRequester = remember { FocusRequester() }
-		val rowsFocusRequester = remember { FocusRequester() }
 		var focusCarousel by remember { mutableStateOf(false) }
-		var focusRows by remember { mutableStateOf(false) }
+		var rowsFragment by remember { mutableStateOf<HomeRowsFragment?>(null) }
 
 		LaunchedEffect(focusCarousel) {
 			if (focusCarousel) {
@@ -56,15 +56,23 @@ class HomeFragment : Fragment() {
 				focusCarousel = false
 			}
 		}
-		LaunchedEffect(focusRows) {
-			if (focusRows) {
-				rowsFocusRequester.requestFocus()
-				focusRows = false
+
+		DisposableEffect(rowsFragment) {
+			rowsFragment?.let { fragment ->
+				HomeFocusCoordinator.activate(
+					focusCarousel = { focusCarousel = true },
+					focusRows = { index -> fragment.focusRow(index) },
+					currentRow = { fragment.selectedPosition },
+					rowCount = { fragment.rowCount }
+				)
+			}
+			onDispose {
+				HomeFocusCoordinator.clear()
 			}
 		}
 
 		val carouselHeight = 280.dp
-		val backgroundExtraHeight = with(LocalDensity.current) { 50.toDp() }
+		val backgroundExtraHeight = with(LocalDensity.current) { 70.toDp() }
 
 		FeaturedCarousel(
 			modifier = Modifier.fillMaxSize(),
@@ -75,16 +83,16 @@ class HomeFragment : Fragment() {
 				.fillMaxWidth()
 				.height(carouselHeight),
 			focusRequester = carouselFocusRequester,
-			onMoveDown = { focusRows = true }
+			onMoveDown = { HomeFocusCoordinator.focusRows?.invoke(0) }
 		) {
 			AndroidFragment<HomeRowsFragment>(
 				modifier = Modifier
 					.fillMaxSize()
 					.padding(top = carouselHeight)
-					.focusGroup()
-					.focusRequester(rowsFocusRequester),
+					.focusGroup(),
 				maxLifecycle = Lifecycle.State.RESUMED,
 				onUpdate = { fragment ->
+					rowsFragment = fragment
 					fragment.onFocusCarousel = { focusCarousel = true }
 				}
 			)

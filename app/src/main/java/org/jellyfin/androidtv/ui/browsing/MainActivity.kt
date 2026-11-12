@@ -11,14 +11,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.zIndex
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
@@ -39,6 +37,7 @@ import org.jellyfin.androidtv.ui.background.AppBackground
 import org.jellyfin.androidtv.ui.base.JellyfinTheme
 import org.jellyfin.androidtv.ui.base.ProvideLocalInteractionTracker
 import org.jellyfin.androidtv.ui.composable.compat.AppNavigationHost
+import org.jellyfin.androidtv.ui.home.HomeFocusCoordinator
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
 import org.jellyfin.androidtv.ui.screensaver.InAppScreensaver
 import org.jellyfin.androidtv.ui.settings.compat.MainActivitySettings
@@ -89,7 +88,6 @@ class MainActivity : FragmentActivity() {
 						)
 
 						val statusBarMargin = with(LocalDensity.current) { 20.toDp() }
-						val focusManager = LocalFocusManager.current
 						Box(
 							modifier = Modifier
 								.align(Alignment.TopEnd)
@@ -97,7 +95,7 @@ class MainActivity : FragmentActivity() {
 								.padding(top = statusBarMargin, end = statusBarMargin)
 								.onKeyEvent { keyEvent ->
 									if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionDown) {
-										focusManager.moveFocus(FocusDirection.Down)
+										HomeFocusCoordinator.moveToCarousel()
 										true
 									} else {
 										false

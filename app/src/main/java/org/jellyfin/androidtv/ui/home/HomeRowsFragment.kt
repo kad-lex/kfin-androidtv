@@ -84,6 +84,15 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 	private var justLoaded = true
 	var onFocusCarousel: (() -> Unit)? = null
 
+	val rowCount: Int
+		get() = adapter?.size() ?: 0
+
+	fun focusRow(index: Int) {
+		val safeIndex = index.coerceIn(0, (rowCount - 1).coerceAtLeast(0))
+		selectedPosition = safeIndex
+		verticalGridView?.post { verticalGridView?.requestFocus() }
+	}
+
 	// Special rows
 	private val notificationsRow by lazy { NotificationsHomeFragmentRow(lifecycleScope, notificationsRepository) }
 	private val nowPlaying by lazy { HomeFragmentNowPlayingRow(lifecycleScope, playbackManager, mediaManager) }
@@ -186,18 +195,10 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 		super.onViewCreated(view, savedInstanceState)
 
 		verticalGridView?.setOnKeyListener { _, keyCode, event ->
-			if (event?.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_DPAD_UP) {
-				when {
-					selectedPosition > 0 -> {
-						selectedPosition = selectedPosition - 1
-						true
-					}
-
-					selectedPosition == 0 -> {
-						onFocusCarousel?.invoke()
-						true
-					}
-
+			if (event?.action == KeyEvent.ACTION_DOWN) {
+				when (keyCode) {
+					KeyEvent.KEYCODE_DPAD_UP -> HomeFocusCoordinator.moveUp()
+					KeyEvent.KEYCODE_DPAD_DOWN -> HomeFocusCoordinator.moveDown()
 					else -> false
 				}
 			} else {

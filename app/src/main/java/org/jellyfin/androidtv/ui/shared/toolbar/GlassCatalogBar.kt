@@ -9,7 +9,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,18 +27,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImagePainter
-import coil3.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.flow.filterNotNull
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.auth.repository.SessionRepository
@@ -47,9 +48,8 @@ import org.jellyfin.androidtv.data.repository.UserViewsRepository
 import org.jellyfin.androidtv.ui.base.Icon
 import org.jellyfin.androidtv.ui.base.ProfilePicture
 import org.jellyfin.androidtv.ui.base.Text
-import org.jellyfin.androidtv.ui.base.button.ButtonDefaults
-import org.jellyfin.androidtv.ui.base.button.IconButton
 import org.jellyfin.androidtv.ui.base.button.IconButtonDefaults
+import org.jellyfin.androidtv.ui.home.HomeFocusCoordinator
 import org.jellyfin.androidtv.ui.itemhandling.ItemLauncher
 import org.jellyfin.androidtv.ui.navigation.ActivityDestinations
 import org.jellyfin.androidtv.ui.navigation.Destinations
@@ -69,12 +69,19 @@ fun GlassCatalogBar(
 	content: @Composable RowScope.() -> Unit,
 ) {
 	val barShape = RoundedCornerShape(40.dp)
+	val sizeIncrease = with(LocalDensity.current) { 4.toDp() }
+	val halfSizeIncrease = with(LocalDensity.current) { 2.toDp() }
 
 	Row(
 		modifier = modifier
-			.widthIn(max = 840.dp)
+			.widthIn(max = 840.dp + sizeIncrease)
 			.horizontalScroll(rememberScrollState())
-			.shadow(elevation = 24.dp, shape = barShape)
+			.shadow(
+				elevation = 5.dp,
+				shape = barShape,
+				ambientColor = Color.Black.copy(alpha = 0.5f),
+				spotColor = Color.Black.copy(alpha = 0.5f)
+			)
 			.clip(barShape)
 			.background(Color(0x660B0D14))
 			.border(
@@ -87,7 +94,10 @@ fun GlassCatalogBar(
 				),
 				shape = barShape
 			)
-			.padding(horizontal = 10.dp, vertical = 2.dp)
+			.padding(
+				horizontal = 10.dp + halfSizeIncrease,
+				vertical = 2.dp + halfSizeIncrease
+			)
 			.focusGroup(),
 		horizontalArrangement = Arrangement.spacedBy(2.dp),
 		verticalAlignment = Alignment.CenterVertically,
@@ -163,19 +173,28 @@ private fun GlassIconButton(
 	contentDescription: String,
 	onClick: () -> Unit,
 ) {
-	IconButton(
-		onClick = onClick,
-		colors = ButtonDefaults.colors(
-			containerColor = Color.Transparent,
-			contentColor = Color.White,
-			focusedContainerColor = Color.White.copy(alpha = 0.18f),
-			focusedContentColor = Color.White
-		),
-		contentPadding = PaddingValues(8.dp),
+	val shape = RoundedCornerShape(40.dp)
+	var isFocused by remember { mutableStateOf(false) }
+
+	Box(
+		modifier = Modifier
+			.clip(shape)
+			.background(
+				if (isFocused) Color.White.copy(alpha = 0.20f)
+				else Color.Transparent
+			)
+			.then(
+				if (isFocused) Modifier.border(2.dp, Color(0xFFF8FAFC), shape)
+				else Modifier
+			)
+			.onFocusChanged { focusState -> isFocused = focusState.hasFocus }
+			.clickable(onClick = onClick)
+			.padding(8.dp)
 	) {
 		Icon(
 			imageVector = icon,
 			contentDescription = contentDescription,
+			tint = Color.White,
 			modifier = Modifier.size(18.dp)
 		)
 	}
@@ -196,6 +215,17 @@ fun HomeStatusBar() {
 	val currentUser by remember { userRepository.currentUser.filterNotNull() }.collectAsState(null)
 	val userViews by userViewsRepository.views.collectAsState(initial = emptyList())
 	val userImage = remember(currentUser) { currentUser?.primaryImage?.getUrl(api) }
+	val profileFocusRequester = remember { FocusRequester() }
+	var isProfileFocused by remember { mutableStateOf(false) }
+
+	DisposableEffect(Unit) {
+		HomeFocusCoordinator.setProfileFocusAction {
+			profileFocusRequester.requestFocus()
+		}
+		onDispose {
+			HomeFocusCoordinator.clearProfileFocusAction()
+		}
+	}
 
 	fun openLibrary(collectionType: CollectionType) {
 		val library = userViews.firstOrNull { it.collectionType == collectionType }
@@ -203,25 +233,27 @@ fun HomeStatusBar() {
 	}
 
 	GlassCatalogBar {
-		val userImagePainter = rememberAsyncImagePainter(userImage)
-		val userImageState by userImagePainter.state.collectAsState()
-		val userImageVisible = userImageState is AsyncImagePainter.State.Success
-
-		IconButton(
-			onClick = {
-				mediaManager.clearAudioQueue()
-				sessionRepository.destroyCurrentSession()
-				activity?.startActivity(ActivityDestinations.startup(activity))
-				activity?.finishAfterTransition()
-			},
-			modifier = Modifier.size(36.dp),
-			colors = ButtonDefaults.colors(
-				containerColor = Color.Transparent,
-				contentColor = Color.White,
-				focusedContainerColor = Color.White.copy(alpha = 0.18f),
-				focusedContentColor = Color.White
-			),
-			contentPadding = if (userImageVisible) PaddingValues(2.dp) else IconButtonDefaults.ContentPadding,
+		Box(
+			modifier = Modifier
+				.size(36.dp)
+				.focusRequester(profileFocusRequester)
+				.clip(RoundedCornerShape(40.dp))
+				.background(
+					if (isProfileFocused) Color.White.copy(alpha = 0.20f)
+					else Color.Transparent
+				)
+				.then(
+					if (isProfileFocused) Modifier.border(2.dp, Color(0xFFF8FAFC), RoundedCornerShape(40.dp))
+					else Modifier
+				)
+				.onFocusChanged { focusState -> isProfileFocused = focusState.hasFocus }
+				.clickable {
+					mediaManager.clearAudioQueue()
+					sessionRepository.destroyCurrentSession()
+					activity?.startActivity(ActivityDestinations.startup(activity))
+					activity?.finishAfterTransition()
+				}
+				.padding(2.dp)
 		) {
 			ProfilePicture(
 				url = userImage,

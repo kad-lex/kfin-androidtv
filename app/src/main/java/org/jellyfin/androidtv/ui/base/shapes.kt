@@ -9,7 +9,7 @@ import androidx.compose.ui.unit.dp
 object ShapeDefaults {
 	val ExtraSmall: CornerBasedShape = RoundedCornerShape(4.0.dp)
 	val Small: CornerBasedShape = RoundedCornerShape(8.0.dp)
-	val Medium: CornerBasedShape = RoundedCornerShape(12.0.dp)
+	val Medium: CornerBasedShape = RoundedCornerShape(11.0.dp)
 	val Large: CornerBasedShape = RoundedCornerShape(16.0.dp)
 	val ExtraLarge: CornerBasedShape = RoundedCornerShape(28.0.dp)
 }

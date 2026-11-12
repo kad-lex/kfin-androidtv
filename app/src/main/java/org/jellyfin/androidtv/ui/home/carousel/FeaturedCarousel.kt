@@ -1,5 +1,6 @@
 package org.jellyfin.androidtv.ui.home.carousel
 
+import android.graphics.Color as AndroidColor
 import android.widget.ImageView
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -24,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -40,10 +42,12 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -54,8 +58,10 @@ import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.ui.base.Icon
 import org.jellyfin.androidtv.ui.base.Text
 import org.jellyfin.androidtv.ui.composable.AsyncImage
+import org.jellyfin.androidtv.ui.home.HomeFocusCoordinator
 import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
+import org.jellyfin.androidtv.util.BlurHashDecoder
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -66,6 +72,7 @@ import org.jellyfin.sdk.model.api.SortOrder
 import org.jellyfin.sdk.model.api.request.GetItemsRequest
 import org.koin.compose.koinInject
 import timber.log.Timber
+import kotlin.math.roundToInt
 
 @Composable
 fun FeaturedCarousel(
@@ -107,6 +114,15 @@ fun FeaturedCarousel(
 	}
 
 	val currentItem = items[currentIndex.coerceIn(items.indices)]
+	val fadeHeight = with(LocalDensity.current) { 70.toDp() }
+	val accentColor by produceState(
+		initialValue = Color(0xFF050608),
+		key1 = currentItem.imageBlurHash
+	) {
+		value = withContext(Dispatchers.Default) {
+			calculateDominantAccentColor(currentItem.imageBlurHash)
+		}
+	}
 
 	Box(modifier = modifier) {
 		Box(modifier = backgroundModifier) {
@@ -115,7 +131,11 @@ fun FeaturedCarousel(
 				animationSpec = tween(durationMillis = 500),
 				label = "featuredCarousel"
 			) { item ->
-				CarouselSlide(item = item)
+				CarouselSlide(
+					item = item,
+					accentColor = accentColor,
+					fadeHeight = fadeHeight
+				)
 			}
 		}
 
@@ -173,8 +193,48 @@ private suspend fun loadFeaturedItems(api: ApiClient): List<FeaturedCarouselItem
 	emptyList()
 }
 
+private fun calculateDominantAccentColor(blurHash: String?): Color {
+	val bitmap = blurHash?.let { BlurHashDecoder.decode(it, 32, 32, 1f) } ?: return Color(0xFF050608)
+	val buckets = HashMap<Long, MutableList<Int>>()
+
+	for (y in 0 until bitmap.height) {
+		for (x in 0 until bitmap.width) {
+			val pixel = bitmap.getPixel(x, y)
+			val red = AndroidColor.red(pixel) / 16
+			val green = AndroidColor.green(pixel) / 16
+			val blue = AndroidColor.blue(pixel) / 16
+			val key = (red.toLong() shl 16) or (green.toLong() shl 8) or blue.toLong()
+			buckets.getOrPut(key) { mutableListOf() }.add(pixel)
+		}
+	}
+
+	val totalPixels = (bitmap.width * bitmap.height).toFloat()
+	val dominantPixels = buckets.maxByOrNull { it.value.size }?.value ?: return Color(0xFF050608)
+	if (dominantPixels.size / totalPixels < 0.30f) return Color(0xFF050608)
+
+	val red = dominantPixels.map { AndroidColor.red(it) }.average().roundToInt().coerceIn(0, 255)
+	val green = dominantPixels.map { AndroidColor.green(it) }.average().roundToInt().coerceIn(0, 255)
+	val blue = dominantPixels.map { AndroidColor.blue(it) }.average().roundToInt().coerceIn(0, 255)
+
+	return Color(
+		red = red / 255f,
+		green = green / 255f,
+		blue = blue / 255f
+	)
+}
+
 @Composable
-private fun CarouselSlide(item: FeaturedCarouselItem) {
+private fun CarouselSlide(
+	item: FeaturedCarouselItem,
+	accentColor: Color,
+	fadeHeight: Dp,
+) {
+	val density = LocalDensity.current
+	val totalHeight = 280.dp + fadeHeight
+	val fadeStart = with(density) {
+		1f - fadeHeight.toPx() / totalHeight.toPx()
+	}.coerceIn(0f, 1f)
+
 	Box(modifier = Modifier.fillMaxSize()) {
 		AsyncImage(
 			url = item.imageUrl,
@@ -186,24 +246,11 @@ private fun CarouselSlide(item: FeaturedCarouselItem) {
 			modifier = Modifier
 				.fillMaxSize()
 				.background(
-					Brush.horizontalGradient(
-						listOf(
-							Color(0xF2050608),
-							Color(0x99050608),
-							Color.Transparent
-						)
-					)
-				)
-		)
-
-		Box(
-			modifier = Modifier
-				.fillMaxSize()
-				.background(
 					Brush.verticalGradient(
-						listOf(
-							Color.Transparent,
-							Color(0xB3050608)
+						colorStops = arrayOf(
+							0f to Color.Transparent,
+							fadeStart to Color.Transparent,
+							1f to accentColor
 						)
 					)
 				)
@@ -311,6 +358,11 @@ private fun CarouselForeground(
 
 							Key.DirectionRight -> {
 								onNext()
+								true
+							}
+
+							Key.DirectionUp -> {
+								HomeFocusCoordinator.moveToProfile()
 								true
 							}
 
