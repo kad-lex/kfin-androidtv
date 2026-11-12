@@ -5,13 +5,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusGroup
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -69,6 +70,7 @@ fun GlassCatalogBar(
 	Row(
 		modifier = modifier
 			.widthIn(max = 840.dp)
+			.horizontalScroll(rememberScrollState())
 			.shadow(elevation = 24.dp, shape = barShape)
 			.clip(barShape)
 			.background(Color(0x660B0D14))
@@ -82,7 +84,7 @@ fun GlassCatalogBar(
 				),
 				shape = barShape
 			)
-			.padding(horizontal = 12.dp, vertical = 2.dp)
+			.padding(horizontal = 10.dp, vertical = 2.dp)
 			.focusGroup(),
 		horizontalArrangement = Arrangement.spacedBy(2.dp),
 		verticalAlignment = Alignment.CenterVertically,
@@ -116,23 +118,25 @@ private fun GlassCatalogTab(
 				) else Modifier
 			)
 			.clickable(enabled = enabled, onClick = onClick)
-			.padding(horizontal = 12.dp, vertical = 8.dp)
+			.padding(horizontal = 8.dp, vertical = 6.dp)
 	) {
 		Row(
 			verticalAlignment = Alignment.CenterVertically,
-			horizontalArrangement = Arrangement.spacedBy(8.dp)
+			horizontalArrangement = Arrangement.spacedBy(6.dp)
 		) {
 			Icon(
 				imageVector = icon,
 				contentDescription = null,
 				tint = Color.White.copy(alpha = contentAlpha),
-				modifier = Modifier.size(18.dp)
+				modifier = Modifier.size(16.dp)
 			)
 			Text(
 				text = title,
 				color = Color.White.copy(alpha = contentAlpha),
-				fontSize = 14.sp,
-				fontWeight = FontWeight.Bold
+				fontSize = 13.sp,
+				fontWeight = FontWeight.Bold,
+				maxLines = 1,
+				softWrap = false
 			)
 		}
 	}
@@ -152,12 +156,12 @@ private fun GlassIconButton(
 			focusedContainerColor = Color.White.copy(alpha = 0.18f),
 			focusedContentColor = Color.White
 		),
-		contentPadding = PaddingValues(10.dp),
+		contentPadding = PaddingValues(8.dp),
 	) {
 		Icon(
 			imageVector = icon,
 			contentDescription = contentDescription,
-			modifier = Modifier.size(20.dp)
+			modifier = Modifier.size(18.dp)
 		)
 	}
 }
@@ -195,19 +199,20 @@ fun HomeStatusBar() {
 				activity?.startActivity(ActivityDestinations.startup(activity))
 				activity?.finishAfterTransition()
 			},
+			modifier = Modifier.size(36.dp),
 			colors = ButtonDefaults.colors(
 				containerColor = Color.Transparent,
 				contentColor = Color.White,
 				focusedContainerColor = Color.White.copy(alpha = 0.18f),
 				focusedContentColor = Color.White
 			),
-			contentPadding = if (userImageVisible) PaddingValues(3.dp) else IconButtonDefaults.ContentPadding,
+			contentPadding = if (userImageVisible) PaddingValues(2.dp) else IconButtonDefaults.ContentPadding,
 		) {
 			ProfilePicture(
 				url = userImage,
 				contentDescription = stringResource(R.string.lbl_switch_user),
 				modifier = Modifier
-					.aspectRatio(1f)
+					.size(32.dp)
 					.clip(IconButtonDefaults.Shape)
 			)
 		}
