@@ -6,7 +6,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,6 +28,7 @@ import kotlinx.coroutines.flow.onEach
 import org.jellyfin.androidtv.auth.repository.ServerRepository
 import org.jellyfin.androidtv.auth.repository.SessionRepository
 import org.jellyfin.androidtv.data.repository.NotificationsRepository
+import org.jellyfin.androidtv.ui.home.carousel.FeaturedCarousel
 import org.jellyfin.androidtv.ui.shared.toolbar.MainToolbar
 import org.jellyfin.androidtv.ui.shared.toolbar.MainToolbarActiveButton
 import org.koin.android.ext.android.inject
@@ -48,6 +48,7 @@ class HomeFragment : Fragment() {
 
 		Column {
 			MainToolbar(MainToolbarActiveButton.Home)
+			FeaturedCarousel()
 
 			// The leanback code has its own awful focus handling that doesn't work properly with Compose view inteop to workaround this
 			// issue we add custom behavior that only allows focus exit when the current selected row is the first one. Additionally when
@@ -55,6 +56,7 @@ class HomeFragment : Fragment() {
 			var rowsSupportFragment by remember { mutableStateOf<HomeRowsFragment?>(null) }
 			AndroidFragment<HomeRowsFragment>(
 				modifier = Modifier
+					.weight(1f)
 					.focusGroup()
 					.focusRequester(rowsFocusRequester)
 					.focusProperties {
@@ -67,8 +69,7 @@ class HomeFragment : Fragment() {
 								rowsSupportFragment?.verticalGridView?.clearFocus()
 							}
 						}
-					}
-					.fillMaxSize(),
+					},
 				maxLifecycle = Lifecycle.State.RESUMED,
 				onUpdate = { fragment ->
 					rowsSupportFragment = fragment

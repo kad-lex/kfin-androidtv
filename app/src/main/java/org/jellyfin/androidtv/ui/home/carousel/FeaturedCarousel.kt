@@ -1,0 +1,338 @@
+package org.jellyfin.androidtv.ui.home.carousel
+
+import android.widget.ImageView
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import org.jellyfin.androidtv.R
+import org.jellyfin.androidtv.ui.base.Icon
+import org.jellyfin.androidtv.ui.base.JellyfinTheme
+import org.jellyfin.androidtv.ui.base.Text
+import org.jellyfin.androidtv.ui.base.button.Button
+import org.jellyfin.androidtv.ui.base.button.ButtonDefaults
+import org.jellyfin.androidtv.ui.composable.AsyncImage
+import org.jellyfin.androidtv.ui.navigation.Destinations
+import org.jellyfin.androidtv.ui.navigation.NavigationRepository
+import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.extensions.itemsApi
+import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.ItemFields
+import org.jellyfin.sdk.model.api.ItemFilter
+import org.jellyfin.sdk.model.api.ItemSortBy
+import org.jellyfin.sdk.model.api.SortOrder
+import org.jellyfin.sdk.model.api.request.GetItemsRequest
+import org.koin.compose.koinInject
+import timber.log.Timber
+
+@Composable
+fun FeaturedCarousel(modifier: Modifier = Modifier) {
+	val api = koinInject<ApiClient>()
+	val navigationRepository = koinInject<NavigationRepository>()
+	var items by remember { mutableStateOf(emptyList<FeaturedCarouselItem>()) }
+
+	LaunchedEffect(api) {
+		items = withContext(Dispatchers.IO) { loadFeaturedItems(api) }
+	}
+	if (items.isEmpty()) return
+
+	var currentIndex by remember(items) { mutableIntStateOf(0) }
+	var isFocused by remember { mutableStateOf(false) }
+
+	LaunchedEffect(currentIndex, isFocused, items.size) {
+		if (items.size > 1 && !isFocused) {
+			delay(8_000)
+			currentIndex = (currentIndex + 1) % items.size
+		}
+	}
+
+	val currentItem = items[currentIndex.coerceIn(items.indices)]
+
+	Box(
+		modifier = modifier
+			.fillMaxWidth()
+			.height(280.dp)
+			.padding(horizontal = 48.dp, vertical = 12.dp)
+			.clip(RoundedCornerShape(16.dp))
+			.border(
+				width = 3.dp,
+				color = Color.White.copy(alpha = if (isFocused) 1f else 0.1f),
+				shape = RoundedCornerShape(16.dp)
+			)
+			.onFocusChanged { focusState -> isFocused = focusState.hasFocus }
+			.onKeyEvent { keyEvent ->
+				if (keyEvent.type != KeyEventType.KeyDown) return@onKeyEvent false
+
+				when (keyEvent.key) {
+					Key.DirectionCenter, Key.Enter -> {
+						navigationRepository.navigate(Destinations.itemDetails(currentItem.id))
+						true
+					}
+
+					Key.DirectionLeft -> {
+						currentIndex = if (currentIndex == 0) items.size - 1 else currentIndex - 1
+						true
+					}
+
+					Key.DirectionRight -> {
+						currentIndex = (currentIndex + 1) % items.size
+						true
+					}
+
+					else -> false
+				}
+			}
+			.focusable()
+	) {
+		Crossfade(
+			targetState = currentItem,
+			animationSpec = tween(durationMillis = 500),
+			label = "featuredCarousel"
+		) { item ->
+			CarouselSlide(item = item)
+		}
+
+		CarouselForeground(
+			item = currentItem,
+			onWatchNow = { navigationRepository.navigate(Destinations.itemDetails(currentItem.id)) },
+			modifier = Modifier.fillMaxSize()
+		)
+
+		CarouselIndicator(
+			itemCount = items.size,
+			activeIndex = currentIndex,
+			modifier = Modifier.align(Alignment.BottomEnd)
+		)
+	}
+}
+
+private suspend fun loadFeaturedItems(api: ApiClient): List<FeaturedCarouselItem> = try {
+	val response = api.itemsApi.getItems(
+		request = GetItemsRequest(
+			includeItemTypes = setOf(BaseItemKind.MOVIE),
+			filters = setOf(ItemFilter.IS_UNPLAYED),
+			sortBy = setOf(ItemSortBy.PREMIERE_DATE, ItemSortBy.SORT_NAME),
+			sortOrder = setOf(SortOrder.DESCENDING),
+			limit = 10,
+			recursive = true,
+			enableImageTypes = setOf(
+				org.jellyfin.sdk.model.api.ImageType.BACKDROP,
+				org.jellyfin.sdk.model.api.ImageType.THUMB,
+				org.jellyfin.sdk.model.api.ImageType.LOGO,
+				org.jellyfin.sdk.model.api.ImageType.PRIMARY,
+			),
+			fields = setOf(ItemFields.OVERVIEW),
+			enableTotalRecordCount = false
+		)
+	)
+
+	response.content.items.orEmpty().mapNotNull { item ->
+		FeaturedCarouselItem.fromBaseItemDto(item, api)
+	}
+} catch (error: Exception) {
+	Timber.e(error, "Failed to load featured carousel items")
+	emptyList()
+}
+
+@Composable
+private fun CarouselSlide(item: FeaturedCarouselItem) {
+	Box(modifier = Modifier.fillMaxSize()) {
+		AsyncImage(
+			url = item.imageUrl,
+			scaleType = ImageView.ScaleType.CENTER_CROP,
+			modifier = Modifier.fillMaxSize()
+		)
+
+		Box(
+			modifier = Modifier
+				.fillMaxSize()
+				.background(
+					Brush.horizontalGradient(
+						listOf(
+							Color(0xF2050608),
+							Color(0x99050608),
+							Color.Transparent
+						)
+					)
+				)
+		)
+
+		Box(
+			modifier = Modifier
+				.fillMaxSize()
+				.background(
+					Brush.verticalGradient(
+						listOf(
+							Color.Transparent,
+							Color(0xB3050608)
+						)
+					)
+				)
+		)
+	}
+}
+
+@Composable
+private fun CarouselForeground(
+	item: FeaturedCarouselItem,
+	onWatchNow: () -> Unit,
+	modifier: Modifier = Modifier,
+) {
+	Box(
+		modifier = modifier.padding(start = 28.dp, top = 22.dp, end = 28.dp, bottom = 22.dp)
+	) {
+		if (item.logoUrl != null) {
+			AsyncImage(
+				url = item.logoUrl,
+				scaleType = ImageView.ScaleType.FIT_CENTER,
+				modifier = Modifier
+					.align(Alignment.TopStart)
+					.width(240.dp)
+					.height(86.dp)
+			)
+		} else {
+			Text(
+				text = item.title,
+				color = Color.White,
+				fontSize = 30.sp,
+				fontWeight = FontWeight.Bold,
+				lineHeight = 34.sp,
+				overflow = TextOverflow.Ellipsis,
+				maxLines = 2,
+				modifier = Modifier
+					.align(Alignment.TopStart)
+					.fillMaxWidth(0.5f)
+			)
+		}
+
+		Column(
+			modifier = Modifier
+				.align(Alignment.BottomStart)
+				.fillMaxWidth(0.58f)
+				.heightIn(max = 170.dp),
+			verticalArrangement = Arrangement.spacedBy(10.dp)
+		) {
+			val metadata = listOfNotNull(
+				item.productionYear?.toString(),
+				item.runtimeText.takeIf { it.isNotBlank() },
+				item.communityRating?.takeIf { it > 0f }?.let { rating -> String.format("%.1f", rating) },
+				item.parentalRating?.takeIf { it.isNotBlank() }
+			).joinToString("  •  ")
+
+			if (metadata.isNotBlank()) {
+				Text(
+					text = metadata,
+					color = Color.White.copy(alpha = 0.8f),
+					fontSize = 15.sp
+				)
+			}
+
+			if (item.overview.isNotBlank()) {
+				Text(
+					text = item.overview,
+					color = Color.White.copy(alpha = 0.9f),
+					fontSize = 14.sp,
+					lineHeight = 20.sp,
+					overflow = TextOverflow.Ellipsis,
+					maxLines = 2
+				)
+			}
+
+			Button(
+				onClick = onWatchNow,
+				shape = RoundedCornerShape(14.dp),
+				colors = ButtonDefaults.colors(
+					containerColor = Color.White.copy(alpha = 0.85f),
+					contentColor = Color.Black,
+					focusedContainerColor = Color.White,
+					focusedContentColor = Color.Black
+				),
+				contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+				modifier = Modifier.padding(top = 4.dp)
+			) {
+				Icon(
+					imageVector = ImageVector.vectorResource(R.drawable.ic_play),
+					contentDescription = null
+				)
+				Spacer(Modifier.width(8.dp))
+				Text(
+					text = stringResource(R.string.watch_now),
+					fontSize = 14.sp,
+					fontWeight = FontWeight.SemiBold
+				)
+			}
+		}
+	}
+}
+
+@Composable
+private fun CarouselIndicator(
+	itemCount: Int,
+	activeIndex: Int,
+	modifier: Modifier = Modifier,
+) {
+	Row(
+		modifier = modifier
+			.padding(16.dp)
+			.background(Color.Black.copy(alpha = 0.35f), CircleShape)
+			.padding(horizontal = 10.dp, vertical = 8.dp),
+		horizontalArrangement = Arrangement.spacedBy(6.dp)
+	) {
+		repeat(itemCount) { index ->
+			val isActive = index == activeIndex
+			Box(
+				modifier = Modifier
+					.height(6.dp)
+					.width(if (isActive) 20.dp else 6.dp)
+					.clip(CircleShape)
+					.background(
+						if (isActive) JellyfinTheme.colorScheme.rangeControlFill
+						else Color.White.copy(alpha = 0.35f)
+					)
+			)
+		}
+	}
+}
