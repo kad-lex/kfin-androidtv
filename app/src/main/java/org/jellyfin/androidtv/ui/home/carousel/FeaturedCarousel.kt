@@ -95,7 +95,6 @@ fun FeaturedCarousel(modifier: Modifier = Modifier) {
 		modifier = modifier
 			.fillMaxWidth()
 			.height(280.dp)
-			.padding(horizontal = 48.dp, vertical = 12.dp)
 			.clip(RoundedCornerShape(16.dp))
 			.border(
 				width = 3.dp,
