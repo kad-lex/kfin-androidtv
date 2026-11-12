@@ -47,7 +47,7 @@ public class HorizontalGridPresenter extends Presenter {
     private boolean mRoundedCornersEnabled = true;
 
     public HorizontalGridPresenter() {
-        this(FocusHighlight.ZOOM_FACTOR_NONE);
+        this(FocusHighlight.ZOOM_FACTOR_LARGE);
     }
 
     public HorizontalGridPresenter(int zoomFactor) {

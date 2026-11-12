@@ -10,7 +10,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalDensity
 import org.jellyfin.androidtv.ui.base.JellyfinTheme
 import org.jellyfin.design.Tokens
 
@@ -23,11 +23,13 @@ fun ItemCard(
 	shape: Shape = JellyfinTheme.shapes.medium,
 	focused: Boolean = false,
 ) {
+	val focusBorderWidth = with(LocalDensity.current) { 3.toDp() }
+
 	Box(
 		modifier = modifier
 			.clip(shape)
 			.background(JellyfinTheme.colorScheme.surface, shape)
-			.then(if (focused) Modifier.border(3.dp, Tokens.Color.colorWhite, shape) else Modifier)
+			.then(if (focused) Modifier.border(focusBorderWidth, Tokens.Color.colorWhite, shape) else Modifier)
 	) {
 		image()
 
