@@ -4,8 +4,6 @@ import android.widget.ImageView
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -80,10 +78,10 @@ fun FeaturedCarousel(modifier: Modifier = Modifier) {
 	if (items.isEmpty()) return
 
 	var currentIndex by remember(items) { mutableIntStateOf(0) }
-	var isFocused by remember { mutableStateOf(false) }
+	var isWatchNowFocused by remember { mutableStateOf(false) }
 
-	LaunchedEffect(currentIndex, isFocused, items.size) {
-		if (items.size > 1 && !isFocused) {
+	LaunchedEffect(currentIndex, isWatchNowFocused, items.size) {
+		if (items.size > 1 && !isWatchNowFocused) {
 			delay(8_000)
 			currentIndex = (currentIndex + 1) % items.size
 		}
@@ -96,35 +94,6 @@ fun FeaturedCarousel(modifier: Modifier = Modifier) {
 			.fillMaxWidth()
 			.height(280.dp)
 			.clip(RoundedCornerShape(16.dp))
-			.border(
-				width = 3.dp,
-				color = Color.White.copy(alpha = if (isFocused) 1f else 0.1f),
-				shape = RoundedCornerShape(16.dp)
-			)
-			.onFocusChanged { focusState -> isFocused = focusState.hasFocus }
-			.onKeyEvent { keyEvent ->
-				if (keyEvent.type != KeyEventType.KeyDown) return@onKeyEvent false
-
-				when (keyEvent.key) {
-					Key.DirectionCenter, Key.Enter -> {
-						navigationRepository.navigate(Destinations.itemDetails(currentItem.id))
-						true
-					}
-
-					Key.DirectionLeft -> {
-						currentIndex = if (currentIndex == 0) items.size - 1 else currentIndex - 1
-						true
-					}
-
-					Key.DirectionRight -> {
-						currentIndex = (currentIndex + 1) % items.size
-						true
-					}
-
-					else -> false
-				}
-			}
-			.focusable()
 	) {
 		Crossfade(
 			targetState = currentItem,
@@ -137,6 +106,9 @@ fun FeaturedCarousel(modifier: Modifier = Modifier) {
 		CarouselForeground(
 			item = currentItem,
 			onWatchNow = { navigationRepository.navigate(Destinations.itemDetails(currentItem.id)) },
+			onPrevious = { currentIndex = if (currentIndex == 0) items.size - 1 else currentIndex - 1 },
+			onNext = { currentIndex = (currentIndex + 1) % items.size },
+			onWatchNowFocusChanged = { focused -> isWatchNowFocused = focused },
 			modifier = Modifier.fillMaxSize()
 		)
 
@@ -218,6 +190,9 @@ private fun CarouselSlide(item: FeaturedCarouselItem) {
 private fun CarouselForeground(
 	item: FeaturedCarouselItem,
 	onWatchNow: () -> Unit,
+	onPrevious: () -> Unit,
+	onNext: () -> Unit,
+	onWatchNowFocusChanged: (Boolean) -> Unit,
 	modifier: Modifier = Modifier,
 ) {
 	Box(
@@ -290,7 +265,26 @@ private fun CarouselForeground(
 					focusedContentColor = Color.Black
 				),
 				contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-				modifier = Modifier.padding(top = 4.dp)
+				modifier = Modifier
+					.padding(top = 4.dp)
+					.onFocusChanged { focusState -> onWatchNowFocusChanged(focusState.hasFocus) }
+					.onKeyEvent { keyEvent ->
+						if (keyEvent.type != KeyEventType.KeyDown) return@onKeyEvent false
+
+						when (keyEvent.key) {
+							Key.DirectionLeft -> {
+								onPrevious()
+								true
+							}
+
+							Key.DirectionRight -> {
+								onNext()
+								true
+							}
+
+							else -> false
+						}
+					}
 			) {
 				Icon(
 					imageVector = ImageVector.vectorResource(R.drawable.ic_play),
