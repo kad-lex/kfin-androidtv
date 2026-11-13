@@ -126,6 +126,14 @@ private fun GlassCatalogTab(
 				else Color.Transparent
 			)
 			.then(
+				if (isActive) Modifier.shadow(
+					elevation = 2.dp,
+					shape = barShape,
+					ambientColor = Color.White.copy(alpha = 0.5f),
+					spotColor = Color.White.copy(alpha = 0.5f)
+				) else Modifier
+			)
+			.then(
 				if (isActive) Modifier.border(
 					2.dp,
 					Color(0xFFF8FAFC),
@@ -182,6 +190,14 @@ private fun GlassIconButton(
 			.background(
 				if (isFocused) Color.White.copy(alpha = 0.20f)
 				else Color.Transparent
+			)
+			.then(
+				if (isFocused) Modifier.shadow(
+					elevation = 2.dp,
+					shape = shape,
+					ambientColor = Color.White.copy(alpha = 0.5f),
+					spotColor = Color.White.copy(alpha = 0.5f)
+				) else Modifier
 			)
 			.then(
 				if (isFocused) Modifier.border(2.dp, Color(0xFFF8FAFC), shape)
@@ -241,6 +257,14 @@ fun HomeStatusBar() {
 				.background(
 					if (isProfileFocused) Color.White.copy(alpha = 0.20f)
 					else Color.Transparent
+				)
+				.then(
+					if (isProfileFocused) Modifier.shadow(
+						elevation = 2.dp,
+						shape = RoundedCornerShape(40.dp),
+						ambientColor = Color.White.copy(alpha = 0.5f),
+						spotColor = Color.White.copy(alpha = 0.5f)
+					) else Modifier
 				)
 				.then(
 					if (isProfileFocused) Modifier.border(2.dp, Color(0xFFF8FAFC), RoundedCornerShape(40.dp))
