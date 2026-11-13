@@ -15,7 +15,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -59,10 +59,10 @@ fun ItemCard(
 				ambientColor = Color.Black.copy(alpha = 0.8f),
 				spotColor = Color.Black.copy(alpha = 0.8f)
 			)
+			.cardGlow(12.dp, enabled = focused)
 			.clip(shape)
 			.background(JellyfinTheme.colorScheme.surface, shape)
 			.then(if (focused) Modifier.border(focusBorderWidth, Tokens.Color.colorWhite.copy(alpha = 0.8f), shape) else Modifier)
-			.then(if (focused) Modifier.glowOverlay(12.dp) else Modifier)
 	) {
 		Column(modifier = Modifier.fillMaxSize()) {
 			Box(
@@ -114,16 +114,14 @@ fun ItemCard(
 	}
 }
 
-private fun Modifier.glowOverlay(cornerRadius: Dp): Modifier = drawWithContent {
-	drawContent()
-
+private fun Modifier.cardGlow(cornerRadius: Dp, enabled: Boolean): Modifier = if (!enabled) this else drawBehind {
 	val strokeWidth = 2.dp.toPx()
 	listOf(2.dp, 4.dp, 6.dp, 8.dp).forEachIndexed { index, expand ->
 		val expandPx = expand.toPx()
 		drawRoundRect(
-			color = Color.White.copy(alpha = 0.35f - index * 0.08f),
+			color = Color.White.copy(alpha = 0.5f - index * 0.12f),
 			topLeft = Offset(-expandPx, -expandPx),
-			size = Size(this.size.width + expandPx * 2, this.size.height + expandPx * 2),
+			size = Size(size.width + expandPx * 2, size.height + expandPx * 2),
 			cornerRadius = CornerRadius(cornerRadius.toPx() + expandPx),
 			style = Stroke(width = strokeWidth)
 		)
