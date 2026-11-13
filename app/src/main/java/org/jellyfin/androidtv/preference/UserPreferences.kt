@@ -48,7 +48,7 @@ class UserPreferences(context: Context) : SharedPreferenceStore(
 		/**
 		 * Behavior of app background while browsing
 		 */
-		var backdropBehavior = enumPreference("backdrop_behavior", BackdropBehavior.BACKDROP_WITH_BLUR)
+		var backdropBehavior = enumPreference("backdrop_behavior_kfin", BackdropBehavior.BACKDROP_WITHOUT_BLUR)
 
 		/* Playback - General*/
 		/**

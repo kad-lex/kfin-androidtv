@@ -10,10 +10,12 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -22,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.BlendMode
@@ -85,7 +88,10 @@ fun AppBackground() {
 			label = "BackgroundTransition",
 		) { background ->
 			if (background != null) {
-				Box(modifier = Modifier.fillMaxSize()) {
+				BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+					val screenWidth = maxWidth
+					val screenHeight = maxHeight
+
 					Image(
 						bitmap = background,
 						contentDescription = null,
@@ -101,12 +107,14 @@ fun AppBackground() {
 					val statusBarWidth = StatusBarBlurState.widthPx.intValue
 					val statusBarHeight = StatusBarBlurState.heightPx.intValue
 					if (statusBarWidth > 0 && statusBarHeight > 0) {
+						val maskWidth = with(LocalDensity.current) { statusBarWidth.toDp() }
+						val maskHeight = with(LocalDensity.current) { statusBarHeight.toDp() }
 						Box(
 							modifier = Modifier
 								.align(Alignment.TopEnd)
 								.padding(top = statusBarMargin, end = statusBarMargin)
-								.width(with(LocalDensity.current) { statusBarWidth.toDp() })
-								.height(with(LocalDensity.current) { statusBarHeight.toDp() })
+								.width(maskWidth)
+								.height(maskHeight)
 								.clip(RoundedCornerShape(40.dp))
 						) {
 							Image(
@@ -116,8 +124,10 @@ fun AppBackground() {
 								contentScale = ContentScale.Crop,
 								colorFilter = ColorFilter.tint(colorResource(R.color.background_filter), BlendMode.SrcAtop),
 								modifier = Modifier
-									.fillMaxSize()
+									.requiredSize(screenWidth, screenHeight)
+									.offset(x = -(screenWidth - statusBarMargin - maskWidth), y = -statusBarMargin)
 									.blur(24.dp)
+									.alpha(0.8f)
 							)
 						}
 					}

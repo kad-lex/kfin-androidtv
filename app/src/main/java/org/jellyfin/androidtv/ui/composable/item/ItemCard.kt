@@ -31,14 +31,22 @@ fun ItemCard(
 	Box(
 		modifier = modifier
 			.shadow(
-				elevation = 2.dp,
+				elevation = 4.dp,
 				shape = shape,
 				ambientColor = Color.Black.copy(alpha = 0.5f),
 				spotColor = Color.Black.copy(alpha = 0.5f)
 			)
+			.then(
+				if (focused) Modifier.shadow(
+					elevation = 5.dp,
+					shape = shape,
+					ambientColor = Color.White.copy(alpha = 0.6f),
+					spotColor = Color.White.copy(alpha = 0.6f)
+				) else Modifier
+			)
 			.clip(shape)
 			.background(JellyfinTheme.colorScheme.surface, shape)
-			.then(if (focused) Modifier.border(focusBorderWidth, Tokens.Color.colorWhite, shape) else Modifier)
+			.then(if (focused) Modifier.border(focusBorderWidth, Tokens.Color.colorWhite.copy(alpha = 0.8f), shape) else Modifier)
 	) {
 		image()
 

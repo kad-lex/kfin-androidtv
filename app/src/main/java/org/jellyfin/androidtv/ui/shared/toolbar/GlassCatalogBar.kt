@@ -77,14 +77,8 @@ fun GlassCatalogBar(
 		modifier = modifier
 			.widthIn(max = 840.dp + sizeIncrease)
 			.horizontalScroll(rememberScrollState())
-			.shadow(
-				elevation = 5.dp,
-				shape = barShape,
-				ambientColor = Color.Black.copy(alpha = 0.5f),
-				spotColor = Color.Black.copy(alpha = 0.5f)
-			)
 			.clip(barShape)
-			.background(Color(0x660B0D14))
+			.background(Color(0xCC0B0D14))
 			.border(
 				width = 1.dp,
 				brush = Brush.verticalGradient(
@@ -132,16 +126,16 @@ private fun GlassCatalogTab(
 			)
 			.then(
 				if (isActive) Modifier.shadow(
-					elevation = 2.dp,
+					elevation = 5.dp,
 					shape = barShape,
-					ambientColor = Color.White.copy(alpha = 0.5f),
-					spotColor = Color.White.copy(alpha = 0.5f)
+					ambientColor = Color.White.copy(alpha = 0.6f),
+					spotColor = Color.White.copy(alpha = 0.6f)
 				) else Modifier
 			)
 			.then(
 				if (isActive) Modifier.border(
 					2.dp,
-					Color(0xFFF8FAFC),
+					Color(0xFFF8FAFC).copy(alpha = 0.8f),
 					barShape
 				) else Modifier
 			)
@@ -201,14 +195,14 @@ private fun GlassIconButton(
 			)
 			.then(
 				if (isFocused) Modifier.shadow(
-					elevation = 2.dp,
+					elevation = 5.dp,
 					shape = shape,
-					ambientColor = Color.White.copy(alpha = 0.5f),
-					spotColor = Color.White.copy(alpha = 0.5f)
+					ambientColor = Color.White.copy(alpha = 0.6f),
+					spotColor = Color.White.copy(alpha = 0.6f)
 				) else Modifier
 			)
 			.then(
-				if (isFocused) Modifier.border(2.dp, Color(0xFFF8FAFC), shape)
+				if (isFocused) Modifier.border(2.dp, Color(0xFFF8FAFC).copy(alpha = 0.8f), shape)
 				else Modifier
 			)
 			.onFocusChanged { focusState ->
@@ -271,14 +265,14 @@ fun HomeStatusBar() {
 				)
 				.then(
 					if (isProfileFocused) Modifier.shadow(
-						elevation = 2.dp,
+						elevation = 5.dp,
 						shape = RoundedCornerShape(40.dp),
-						ambientColor = Color.White.copy(alpha = 0.5f),
-						spotColor = Color.White.copy(alpha = 0.5f)
+						ambientColor = Color.White.copy(alpha = 0.6f),
+						spotColor = Color.White.copy(alpha = 0.6f)
 					) else Modifier
 				)
 				.then(
-					if (isProfileFocused) Modifier.border(2.dp, Color(0xFFF8FAFC), RoundedCornerShape(40.dp))
+					if (isProfileFocused) Modifier.border(2.dp, Color(0xFFF8FAFC).copy(alpha = 0.8f), RoundedCornerShape(40.dp))
 					else Modifier
 				)
 				.onFocusChanged { focusState ->
