@@ -91,6 +91,7 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
     private CardPresenter mCardPresenter;
 
     private boolean justLoaded = true;
+    private boolean gridInitialized = false;
     private PosterSize mPosterSizeSetting = PosterSize.MED;
     private ImageType mImageType = ImageType.POSTER;
     private GridDirection mGridDirection = GridDirection.HORIZONTAL;
@@ -208,7 +209,7 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
 
                 // Align the info block (title → infoRow → overview) with the grid top boundary
                 ViewGroup.MarginLayoutParams titleLp = (ViewGroup.MarginLayoutParams) binding.title.getLayoutParams();
-                titleLp.topMargin = gridTop;
+                titleLp.topMargin = gridTop - 100; // block raised 100px above the boundary
                 binding.title.setLayoutParams(titleLp);
 
                 binding.getRoot().post(() -> {
@@ -220,6 +221,7 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
                     createGrid();
                     loadGrid();
                     addTools();
+                    gridInitialized = true;
                 });
             }
         });
@@ -237,6 +239,7 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
 
         binding = null;
         mGridView = null;
+        gridInitialized = false;
     }
 
     private void createGrid() {
@@ -612,8 +615,12 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
             }
             setDefaultGridRowCols(mPosterSizeSetting, mImageType);
             setAutoCardGridValues();
-            createGrid();
-            loadGrid();
+            if (gridInitialized) {
+                // First creation is deferred to the global layout listener so the
+                // grid is built exactly once with the final measured geometry
+                createGrid();
+                loadGrid();
+            }
             determiningPosterSize = false;
         }
 
