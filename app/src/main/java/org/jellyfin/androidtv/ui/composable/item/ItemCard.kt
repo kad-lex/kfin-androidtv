@@ -60,14 +60,17 @@ fun ItemCard(
 }
 
 private fun Modifier.cardGlow(cornerRadius: Dp, enabled: Boolean): Modifier = if (!enabled) this else drawBehind {
-	val strokeWidth = 2.dp.toPx()
-	listOf(2.dp, 4.dp, 6.dp, 8.dp).forEachIndexed { index, expand ->
-		val expandPx = expand.toPx()
+	val stepPx = 1.dp.toPx()
+	val strokeWidth = 1.5.dp.toPx()
+	val cornerPx = cornerRadius.toPx()
+
+	repeat(8) { i ->
+		val expandPx = (i + 1) * stepPx
 		drawRoundRect(
-			color = Color.White.copy(alpha = 0.5f - index * 0.12f),
+			color = Color.White.copy(alpha = 0.30f * (1f - i / 8f)),
 			topLeft = Offset(-expandPx, -expandPx),
 			size = Size(size.width + expandPx * 2, size.height + expandPx * 2),
-			cornerRadius = CornerRadius(cornerRadius.toPx() + expandPx),
+			cornerRadius = CornerRadius(cornerPx + expandPx),
 			style = Stroke(width = strokeWidth)
 		)
 	}
