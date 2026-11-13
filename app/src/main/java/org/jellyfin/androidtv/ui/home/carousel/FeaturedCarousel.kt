@@ -1,9 +1,7 @@
 package org.jellyfin.androidtv.ui.home.carousel
 
-import android.graphics.Color as AndroidColor
 import android.widget.ImageView
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,17 +24,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
@@ -44,13 +41,12 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -64,7 +60,6 @@ import org.jellyfin.androidtv.ui.composable.AsyncImage
 import org.jellyfin.androidtv.ui.home.HomeFocusCoordinator
 import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
-import org.jellyfin.androidtv.util.BlurHashDecoder
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -75,14 +70,12 @@ import org.jellyfin.sdk.model.api.SortOrder
 import org.jellyfin.sdk.model.api.request.GetItemsRequest
 import org.koin.compose.koinInject
 import timber.log.Timber
-import kotlin.math.roundToInt
 
 @Composable
 fun FeaturedCarousel(
 	modifier: Modifier = Modifier,
 	backgroundModifier: Modifier = Modifier,
 	foregroundModifier: Modifier = Modifier,
-	fadeBoundary: Dp,
 	focusRequester: FocusRequester,
 	onMoveDown: () -> Unit,
 	content: @Composable () -> Unit = {},
@@ -118,20 +111,6 @@ fun FeaturedCarousel(
 	}
 
 	val currentItem = items[currentIndex.coerceIn(items.indices)]
-	val fadeHeight = with(LocalDensity.current) { 70.toDp() }
-	val calculatedAccentColor by produceState(
-		initialValue = Color(0xFF050608),
-		key1 = currentItem.imageBlurHash
-	) {
-		value = withContext(Dispatchers.Default) {
-			calculateDominantAccentColor(currentItem.imageBlurHash)
-		}
-	}
-	val accentColor by animateColorAsState(
-		targetValue = calculatedAccentColor,
-		animationSpec = tween(durationMillis = 500),
-		label = "carouselAccentColor"
-	)
 
 	Box(modifier = modifier) {
 		Box(modifier = backgroundModifier) {
@@ -140,12 +119,7 @@ fun FeaturedCarousel(
 				animationSpec = tween(durationMillis = 500),
 				label = "featuredCarousel"
 			) { item ->
-				CarouselSlide(
-					item = item,
-					accentColor = accentColor,
-					fadeHeight = fadeHeight,
-					fadeBoundary = fadeBoundary
-				)
+				CarouselSlide(item = item)
 			}
 		}
 
@@ -206,48 +180,8 @@ private suspend fun loadFeaturedItems(api: ApiClient): List<FeaturedCarouselItem
 	emptyList()
 }
 
-private fun calculateDominantAccentColor(blurHash: String?): Color {
-	val bitmap = blurHash?.let { BlurHashDecoder.decode(it, 32, 32, 1f) } ?: return Color(0xFF050608)
-	val buckets = HashMap<Long, MutableList<Int>>()
-
-	for (y in 0 until bitmap.height) {
-		for (x in 0 until bitmap.width) {
-			val pixel = bitmap.getPixel(x, y)
-			val red = AndroidColor.red(pixel) / 16
-			val green = AndroidColor.green(pixel) / 16
-			val blue = AndroidColor.blue(pixel) / 16
-			val key = (red.toLong() shl 16) or (green.toLong() shl 8) or blue.toLong()
-			buckets.getOrPut(key) { mutableListOf() }.add(pixel)
-		}
-	}
-
-	val totalPixels = (bitmap.width * bitmap.height).toFloat()
-	val dominantPixels = buckets.maxByOrNull { it.value.size }?.value ?: return Color(0xFF050608)
-	if (dominantPixels.size / totalPixels < 0.30f) return Color(0xFF050608)
-
-	val red = dominantPixels.map { AndroidColor.red(it) }.average().roundToInt().coerceIn(0, 255)
-	val green = dominantPixels.map { AndroidColor.green(it) }.average().roundToInt().coerceIn(0, 255)
-	val blue = dominantPixels.map { AndroidColor.blue(it) }.average().roundToInt().coerceIn(0, 255)
-
-	return Color(
-		red = red / 255f,
-		green = green / 255f,
-		blue = blue / 255f
-	)
-}
-
 @Composable
-private fun CarouselSlide(
-	item: FeaturedCarouselItem,
-	accentColor: Color,
-	fadeHeight: Dp,
-	fadeBoundary: Dp,
-) {
-	val density = LocalDensity.current
-	val screenHeight = LocalConfiguration.current.screenHeightDp.dp
-	val boundaryFraction = with(density) { fadeBoundary.toPx() / screenHeight.toPx() }.coerceIn(0f, 1f)
-	val fadeStartFraction = with(density) { (fadeBoundary - fadeHeight).toPx() / screenHeight.toPx() }.coerceIn(0f, 1f)
-
+private fun CarouselSlide(item: FeaturedCarouselItem) {
 	Box(modifier = Modifier.fillMaxSize()) {
 		AsyncImage(
 			url = item.imageUrl,
@@ -255,33 +189,23 @@ private fun CarouselSlide(
 			modifier = Modifier.fillMaxSize()
 		)
 
+		val statusBarMargin = with(LocalDensity.current) { 20.toDp() }
 		Box(
 			modifier = Modifier
-				.fillMaxWidth()
-				.height(56.dp)
-				.blur(24.dp)
+				.align(Alignment.TopEnd)
+				.padding(top = statusBarMargin, end = statusBarMargin)
+				.width(844.dp)
+				.height(54.dp)
+				.clip(RoundedCornerShape(40.dp))
 		) {
 			AsyncImage(
 				url = item.imageUrl,
 				scaleType = ImageView.ScaleType.CENTER_CROP,
-				modifier = Modifier.fillMaxSize()
+				modifier = Modifier
+					.fillMaxSize()
+					.blur(24.dp)
 			)
 		}
-
-		Box(
-			modifier = Modifier
-				.fillMaxSize()
-				.background(
-					Brush.verticalGradient(
-						colorStops = arrayOf(
-							0f to Color.Transparent,
-							fadeStartFraction to Color.Transparent,
-							boundaryFraction to accentColor,
-							1f to accentColor
-						)
-					)
-				)
-		)
 	}
 }
 
@@ -298,7 +222,7 @@ private fun CarouselForeground(
 	modifier: Modifier = Modifier,
 ) {
 	Box(
-		modifier = modifier.padding(start = 28.dp, top = 22.dp, end = 28.dp, bottom = 22.dp)
+		modifier = modifier.padding(start = 28.dp, top = 22.dp, end = 28.dp, bottom = 25.dp)
 	) {
 		if (item.logoUrl != null) {
 			AsyncImage(
@@ -326,10 +250,11 @@ private fun CarouselForeground(
 
 		Column(
 			modifier = Modifier
-				.align(Alignment.BottomStart)
+				.align(Alignment.BottomCenter)
 				.fillMaxWidth(0.58f)
 				.heightIn(max = 170.dp),
-			verticalArrangement = Arrangement.spacedBy(10.dp)
+			verticalArrangement = Arrangement.spacedBy(10.dp),
+			horizontalAlignment = Alignment.CenterHorizontally
 		) {
 			val metadata = listOfNotNull(
 				item.productionYear?.toString(),
@@ -342,7 +267,8 @@ private fun CarouselForeground(
 				Text(
 					text = metadata,
 					color = Color.White.copy(alpha = 0.8f),
-					fontSize = 15.sp
+					fontSize = 15.sp,
+					textAlign = TextAlign.Center
 				)
 			}
 
@@ -353,7 +279,8 @@ private fun CarouselForeground(
 					fontSize = 14.sp,
 					lineHeight = 20.sp,
 					overflow = TextOverflow.Ellipsis,
-					maxLines = 2
+					maxLines = 2,
+					textAlign = TextAlign.Center
 				)
 			}
 
@@ -367,9 +294,17 @@ private fun CarouselForeground(
 						if (watchNowFocused) Color.White.copy(alpha = 0.20f)
 						else Color.White.copy(alpha = 0.08f)
 					)
+					.then(
+						if (watchNowFocused) Modifier.shadow(
+							elevation = 2.dp,
+							shape = watchNowShape,
+							ambientColor = Color.White.copy(alpha = 0.8f),
+							spotColor = Color.White.copy(alpha = 0.8f)
+						) else Modifier
+					)
 					.border(
 						width = if (watchNowFocused) 2.dp else 1.dp,
-						color = if (watchNowFocused) Color(0xFFF8FAFC)
+						color = if (watchNowFocused) Color(0xFFF8FAFC).copy(alpha = 0.8f)
 						else Color.White.copy(alpha = 0.12f),
 						shape = watchNowShape
 					)

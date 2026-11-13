@@ -13,6 +13,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -20,12 +23,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
@@ -91,17 +96,26 @@ fun AppBackground() {
 							.then(if (blurBackground) Modifier.blur(10.dp) else Modifier)
 					)
 
-					Image(
-						bitmap = background,
-						contentDescription = null,
-						alignment = Alignment.TopCenter,
-						contentScale = ContentScale.Crop,
-						colorFilter = ColorFilter.tint(colorResource(R.color.background_filter), BlendMode.SrcAtop),
+					val statusBarMargin = with(LocalDensity.current) { 20.toDp() }
+					Box(
 						modifier = Modifier
-							.fillMaxWidth()
-							.height(56.dp)
-							.blur(24.dp)
-					)
+							.align(Alignment.TopEnd)
+							.padding(top = statusBarMargin, end = statusBarMargin)
+							.width(844.dp)
+							.height(54.dp)
+							.clip(RoundedCornerShape(40.dp))
+					) {
+						Image(
+							bitmap = background,
+							contentDescription = null,
+							alignment = Alignment.TopCenter,
+							contentScale = ContentScale.Crop,
+							colorFilter = ColorFilter.tint(colorResource(R.color.background_filter), BlendMode.SrcAtop),
+							modifier = Modifier
+								.fillMaxSize()
+								.blur(24.dp)
+						)
+					}
 				}
 			} else {
 				AppThemeBackground()

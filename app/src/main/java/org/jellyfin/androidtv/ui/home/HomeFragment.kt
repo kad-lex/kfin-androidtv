@@ -73,7 +73,7 @@ class HomeFragment : Fragment() {
 
 		val carouselHeight = 280.dp
 		val watchNowBottomPadding = 22.dp
-		val rowsTopBoundary = carouselHeight - watchNowBottomPadding + with(LocalDensity.current) { 1.toDp() }
+		val rowsTopBoundary = carouselHeight - watchNowBottomPadding + with(LocalDensity.current) { (1 - 3).toDp() }
 
 		FeaturedCarousel(
 			modifier = Modifier.fillMaxSize(),
@@ -81,7 +81,6 @@ class HomeFragment : Fragment() {
 			foregroundModifier = Modifier
 				.fillMaxWidth()
 				.height(carouselHeight),
-			fadeBoundary = rowsTopBoundary,
 			focusRequester = carouselFocusRequester,
 			onMoveDown = { HomeFocusCoordinator.focusRows?.invoke(0) }
 		) {
