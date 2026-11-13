@@ -4,12 +4,9 @@ import android.view.KeyEvent
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -27,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.leanback.widget.Presenter
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
@@ -35,12 +33,10 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.constant.ImageType
-import org.jellyfin.androidtv.ui.base.JellyfinTheme
 import org.jellyfin.androidtv.ui.base.Text
 import org.jellyfin.androidtv.ui.composable.AsyncImage
 import org.jellyfin.androidtv.ui.composable.item.ItemCard
 import org.jellyfin.androidtv.ui.composable.item.ItemCardBaseItemOverlay
-import org.jellyfin.androidtv.ui.composable.item.ItemPreview
 import org.jellyfin.androidtv.ui.itemhandling.BaseItemDtoBaseRowItem
 import org.jellyfin.androidtv.ui.itemhandling.BaseRowItem
 import org.jellyfin.androidtv.ui.itemhandling.BaseRowType
@@ -310,6 +306,58 @@ private fun CardViewHolderContent(
 
 	val usePreview = displayConfig.overrideShowInfo ?: showInfo
 
+	val focusModifier = if (focused) Modifier.basicMarquee(
+		iterations = Int.MAX_VALUE,
+		initialDelayMillis = 0,
+	) else Modifier
+
+	val footer: (@Composable () -> Unit)? = when {
+		usePreview && (title != null || subtitle != null) -> {
+			{
+				Column(horizontalAlignment = Alignment.CenterHorizontally) {
+					title?.let { text ->
+						Text(
+							text = text,
+							maxLines = 1,
+							overflow = TextOverflow.Ellipsis,
+							textAlign = TextAlign.Center,
+							color = Tokens.Color.colorGrey100,
+							fontSize = 12.sp,
+							modifier = Modifier.then(focusModifier)
+						)
+					}
+
+					subtitle?.let { text ->
+						Text(
+							text = text,
+							maxLines = 1,
+							overflow = TextOverflow.Ellipsis,
+							textAlign = TextAlign.Center,
+							color = Tokens.Color.colorGrey300,
+							fontSize = 10.sp
+						)
+					}
+				}
+			}
+		}
+
+		!usePreview && item.showCardInfoOverlay && title != null -> {
+			{
+				Text(
+					text = title,
+					maxLines = 1,
+					overflow = TextOverflow.Ellipsis,
+					textAlign = TextAlign.Center,
+					color = Tokens.Color.colorGrey100,
+					fontSize = 12.sp,
+					modifier = Modifier.then(focusModifier)
+				)
+			}
+		}
+
+		else -> null
+	}
+
 	val card = @Composable {
 		ItemCard(
 			focused = focused,
@@ -345,37 +393,10 @@ private fun CardViewHolderContent(
 					)
 				}
 			},
+			footer = footer,
 			overlay = {
-				val showInfo = !usePreview && item.showCardInfoOverlay
 				item.baseItem?.let { baseItem ->
-					ItemCardBaseItemOverlay(
-						item = baseItem,
-						footer = {
-							if (showInfo && title != null) {
-								val focusModifier = if (focused) Modifier.basicMarquee(
-									iterations = Int.MAX_VALUE,
-									initialDelayMillis = 0,
-								) else Modifier
-
-								Box(
-									modifier = Modifier
-										.fillMaxWidth()
-										.background(Tokens.Color.colorBluegrey900.copy(alpha = 0.6f), JellyfinTheme.shapes.extraSmall),
-								) {
-									Text(
-										text = title,
-										maxLines = 1,
-										overflow = TextOverflow.Ellipsis,
-										textAlign = TextAlign.Center,
-										color = Tokens.Color.colorWhite,
-										modifier = Modifier
-											.then(focusModifier)
-											.padding(Tokens.Space.spaceXs),
-									)
-								}
-							}
-						}
-					)
+					ItemCardBaseItemOverlay(item = baseItem)
 				}
 			},
 			modifier = Modifier
@@ -383,38 +404,5 @@ private fun CardViewHolderContent(
 		)
 	}
 
-	if (usePreview) {
-		val focusModifier = if (focused) Modifier.basicMarquee(
-			iterations = Int.MAX_VALUE,
-			initialDelayMillis = 0,
-		) else Modifier
-
-		ItemPreview(
-			card = { card() },
-			title = title?.let { text ->
-				{
-					Text(
-						text = text,
-						maxLines = 1,
-						overflow = TextOverflow.Ellipsis,
-						textAlign = TextAlign.Center,
-						modifier = Modifier.then(focusModifier),
-					)
-				}
-			},
-			subtitle = subtitle?.let { text ->
-				{
-					Text(
-						text = text,
-						maxLines = 1,
-						overflow = TextOverflow.Ellipsis,
-						textAlign = TextAlign.Center,
-						modifier = Modifier.then(focusModifier),
-					)
-				}
-			},
-		)
-	} else {
-		card()
-	}
+	card()
 }

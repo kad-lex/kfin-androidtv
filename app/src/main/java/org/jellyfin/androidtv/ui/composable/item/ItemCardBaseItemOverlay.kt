@@ -40,7 +40,6 @@ import org.koin.compose.koinInject
 @Stable
 fun ItemCardBaseItemOverlay(
 	item: BaseItemDto,
-	footer: (@Composable () -> Unit)? = null,
 ) = Box(
 	modifier = Modifier
 		.fillMaxSize()
@@ -56,16 +55,10 @@ fun ItemCardBaseItemOverlay(
 		modifier = Modifier.align(Alignment.TopEnd)
 	)
 
-	Column(
-		modifier = Modifier.align(Alignment.BottomCenter),
-		verticalArrangement = Arrangement.spacedBy(Tokens.Space.spaceXs)
-	) {
-		ProgressIndicator(
-			item = item,
-		)
-
-		if (footer != null) footer()
-	}
+	ProgressIndicator(
+		item = item,
+		modifier = Modifier.align(Alignment.BottomCenter)
+	)
 }
 
 @Composable
@@ -164,13 +157,13 @@ private fun ProgressIndicator(
 	}
 
 	if (playedPercentage != null) {
-		Box(modifier = modifier.padding(Tokens.Space.spaceXs)) {
+		Box(modifier = modifier.padding(horizontal = 8.dp, vertical = 3.dp)) {
 			Seekbar(
 				progress = playedPercentage,
 				enabled = false,
 				modifier = Modifier
 					.fillMaxWidth()
-					.height(4.dp)
+					.height(3.dp)
 			)
 		}
 	}
