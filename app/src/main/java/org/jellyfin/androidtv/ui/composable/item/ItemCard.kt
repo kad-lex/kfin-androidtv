@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
@@ -29,8 +30,11 @@ fun ItemCard(
 ) {
 	val focusBorderWidth = with(LocalDensity.current) { 6.toDp() }
 
+	val glowPadding = 5.dp
+
 	Box(
 		modifier = modifier
+			.padding(glowPadding)
 			.shadow(
 				elevation = 5.dp,
 				shape = shape,

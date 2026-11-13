@@ -9,6 +9,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
@@ -44,6 +46,8 @@ import org.jellyfin.androidtv.ui.settings.compat.MainActivitySettings
 import org.jellyfin.androidtv.ui.shared.toolbar.HomeStatusBar
 import org.jellyfin.androidtv.ui.startup.StartupActivity
 import org.jellyfin.androidtv.util.applyTheme
+import org.jellyfin.playback.core.PlaybackManager
+import org.jellyfin.playback.core.model.PlayState
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import timber.log.Timber
@@ -54,6 +58,7 @@ class MainActivity : FragmentActivity() {
 	private val userRepository by inject<UserRepository>()
 	private val interactionTrackerViewModel by viewModel<InteractionTrackerViewModel>()
 	private val workManager by inject<WorkManager>()
+	private val playbackManager by inject<PlaybackManager>()
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		applyTheme()
@@ -87,22 +92,25 @@ class MainActivity : FragmentActivity() {
 							navigationRepository = navigationRepository,
 						)
 
-						val statusBarMargin = with(LocalDensity.current) { 20.toDp() }
-						Box(
-							modifier = Modifier
-								.align(Alignment.TopEnd)
-								.zIndex(1f)
-								.padding(top = statusBarMargin, end = statusBarMargin)
-								.onKeyEvent { keyEvent ->
-									if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionDown) {
-										HomeFocusCoordinator.moveToCarousel()
-										true
-									} else {
-										false
+						val playState by playbackManager.state.playState.collectAsState()
+						if (playState != PlayState.PLAYING && playState != PlayState.PAUSED) {
+							val statusBarMargin = with(LocalDensity.current) { 20.toDp() }
+							Box(
+								modifier = Modifier
+									.align(Alignment.TopEnd)
+									.zIndex(1f)
+									.padding(top = statusBarMargin, end = statusBarMargin)
+									.onKeyEvent { keyEvent ->
+										if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionDown) {
+											HomeFocusCoordinator.moveToCarousel()
+											true
+										} else {
+											false
+										}
 									}
-								}
-						) {
-							HomeStatusBar()
+							) {
+								HomeStatusBar()
+							}
 						}
 
 						InAppScreensaver()

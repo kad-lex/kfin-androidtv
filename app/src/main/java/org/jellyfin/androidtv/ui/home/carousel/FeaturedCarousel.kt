@@ -8,6 +8,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -49,6 +51,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -79,6 +82,7 @@ fun FeaturedCarousel(
 	modifier: Modifier = Modifier,
 	backgroundModifier: Modifier = Modifier,
 	foregroundModifier: Modifier = Modifier,
+	blurBoundary: Dp,
 	focusRequester: FocusRequester,
 	onMoveDown: () -> Unit,
 	content: @Composable () -> Unit = {},
@@ -122,7 +126,10 @@ fun FeaturedCarousel(
 				animationSpec = tween(durationMillis = 500),
 				label = "featuredCarousel"
 			) { item ->
-				CarouselSlide(item = item)
+				CarouselSlide(
+					item = item,
+					blurBoundary = blurBoundary
+				)
 			}
 		}
 
@@ -184,14 +191,17 @@ private suspend fun loadFeaturedItems(api: ApiClient): List<FeaturedCarouselItem
 }
 
 @Composable
-private fun CarouselSlide(item: FeaturedCarouselItem) {
-	Box(modifier = Modifier.fillMaxSize()) {
+private fun CarouselSlide(
+	item: FeaturedCarouselItem,
+	blurBoundary: Dp,
+) {
+	BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+		val boundaryFraction = with(LocalDensity.current) { blurBoundary.toPx() / maxHeight.toPx() }.coerceIn(0f, 1f)
+
 		AsyncImage(
 			url = item.imageUrl,
 			scaleType = ImageView.ScaleType.CENTER_CROP,
-			modifier = Modifier
-				.fillMaxSize()
-				.blur(24.dp)
+			modifier = Modifier.fillMaxSize()
 		)
 
 		Box(
@@ -202,7 +212,9 @@ private fun CarouselSlide(item: FeaturedCarouselItem) {
 			AsyncImage(
 				url = item.imageUrl,
 				scaleType = ImageView.ScaleType.CENTER_CROP,
-				modifier = Modifier.fillMaxSize()
+				modifier = Modifier
+					.fillMaxSize()
+					.blur(14.dp)
 			)
 
 			Box(
@@ -212,7 +224,7 @@ private fun CarouselSlide(item: FeaturedCarouselItem) {
 						drawRect(
 							brush = Brush.verticalGradient(
 								0f to Color.Transparent,
-								0.5f to Color.Black,
+								boundaryFraction to Color.Black,
 								1f to Color.Black
 							),
 							blendMode = BlendMode.DstIn
@@ -266,7 +278,8 @@ private fun CarouselForeground(
 			modifier = Modifier
 				.align(Alignment.BottomCenter)
 				.fillMaxWidth(0.58f)
-				.heightIn(max = 170.dp),
+				.heightIn(max = 170.dp)
+				.offset(x = with(LocalDensity.current) { 5.toDp() }),
 			verticalArrangement = Arrangement.spacedBy(10.dp),
 			horizontalAlignment = Alignment.Start
 		) {

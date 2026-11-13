@@ -3,6 +3,7 @@ package org.jellyfin.androidtv.ui.composable.item
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -33,7 +34,9 @@ import org.jellyfin.playback.core.model.PlayState
 import org.jellyfin.playback.jellyfin.queue.baseItem
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
+import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.MediaType
+import org.jellyfin.sdk.model.api.VideoRangeType
 import org.koin.compose.koinInject
 
 @Composable
@@ -51,10 +54,15 @@ fun ItemCardBaseItemOverlay(
 		modifier = Modifier.align(Alignment.TopStart),
 	)
 
-	WatchIndicator(
-		item = item,
-		modifier = Modifier.align(Alignment.TopEnd)
-	)
+	Column(
+		modifier = Modifier.align(Alignment.TopEnd),
+		verticalArrangement = Arrangement.spacedBy(Tokens.Space.spaceXs),
+		horizontalAlignment = Alignment.End
+	) {
+		WatchIndicator(item = item)
+
+		QualityBadges(item = item)
+	}
 
 	Column(
 		modifier = Modifier.align(Alignment.BottomCenter),
@@ -140,6 +148,49 @@ private fun WatchIndicator(
 			Text(
 				text = unplayedItems.toString(),
 			)
+		}
+	}
+}
+
+@Composable
+@Stable
+private fun QualityBadges(item: BaseItemDto) {
+	val videoStream = item.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+	val height = videoStream?.height
+	val resolution = when {
+		height == null -> null
+		height >= 2160 -> "4K"
+		height >= 1080 -> "1080p"
+		height >= 720 -> "720p"
+		else -> null
+	}
+	val isHdr = when (videoStream?.videoRangeType) {
+		VideoRangeType.HDR10,
+		VideoRangeType.HDR10_PLUS,
+		VideoRangeType.HLG,
+		VideoRangeType.DOVI,
+		VideoRangeType.DOVI_WITH_HDR10,
+		VideoRangeType.DOVI_WITH_HLG,
+		VideoRangeType.DOVI_WITH_EL,
+		VideoRangeType.DOVI_WITH_HDR10_PLUS,
+		VideoRangeType.DOVI_WITH_ELHDR10_PLUS -> true
+
+		else -> false
+	}
+
+	if (resolution == null && !isHdr) return
+
+	Row(horizontalArrangement = Arrangement.spacedBy(Tokens.Space.spaceXs)) {
+		if (resolution != null) {
+			Badge {
+				Text(text = resolution)
+			}
+		}
+
+		if (isHdr) {
+			Badge {
+				Text(text = "HDR")
+			}
 		}
 	}
 }

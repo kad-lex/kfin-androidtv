@@ -290,7 +290,11 @@ private fun CardViewHolderContent(
 	val localDensity = LocalDensity.current
 
 	val title = remember(item, context) { item?.getCardName(context) }
-	val subtitle = remember(item, context) { item?.getSubText(context) }
+	val subtitle = remember(item, context) {
+		item?.getSubText(context)?.takeUnless { sub ->
+			(item as? BaseItemDtoBaseRowItem)?.baseItem?.officialRating == sub
+		}
+	}
 	val displayConfig = remember(item, imageType, uniformAspect) { item?.getDisplayConfig(imageType, uniformAspect) }
 	if (item == null || displayConfig == null) return
 
