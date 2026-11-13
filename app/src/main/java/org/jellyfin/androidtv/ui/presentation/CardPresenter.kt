@@ -7,7 +7,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.collectAsState
@@ -363,6 +362,7 @@ private fun CardViewHolderContent(
 
 	val card = @Composable {
 		ItemCard(
+			size = size,
 			focused = focused,
 			image = {
 				if (image != null) {
@@ -402,9 +402,7 @@ private fun CardViewHolderContent(
 				item.baseItem?.let { baseItem ->
 					ItemCardBaseItemOverlay(item = baseItem)
 				}
-			},
-			modifier = Modifier
-				.size(size)
+			}
 		)
 	}
 
