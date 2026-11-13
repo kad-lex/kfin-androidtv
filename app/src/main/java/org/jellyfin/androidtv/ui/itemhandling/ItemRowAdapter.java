@@ -423,6 +423,23 @@ public class ItemRowAdapter extends MutableObjectAdapter<Object> {
         }
     }
 
+    public String getQuerySignature() {
+        int queryHash;
+        switch (queryType) {
+            case Artists:
+                queryHash = mArtistsQuery != null ? mArtistsQuery.hashCode() : 0;
+                break;
+            case AlbumArtists:
+                queryHash = mAlbumArtistsQuery != null ? mAlbumArtistsQuery.hashCode() : 0;
+                break;
+            default:
+                queryHash = mQuery != null ? mQuery.hashCode() : 0;
+                break;
+        }
+        return queryType + "|" + queryHash + "|" + mSortBy + "|" + sortOrder + "|" + getStartLetter()
+                + "|" + (mFilters != null ? (mFilters.isFavoriteOnly() + "/" + mFilters.isUnwatchedOnly()) : "");
+    }
+
     public void setStartLetter(String value) {
         switch (queryType) {
             case Artists:
@@ -474,6 +491,9 @@ public class ItemRowAdapter extends MutableObjectAdapter<Object> {
     public void loadMoreItemsIfNeeded(int pos) {
         if (fullyLoaded) {
             //context.getLogger().Debug("Row is fully loaded");
+            return;
+        }
+        if (totalItems > 0 && itemsLoaded >= totalItems) {
             return;
         }
         if (isCurrentlyRetrieving()) {

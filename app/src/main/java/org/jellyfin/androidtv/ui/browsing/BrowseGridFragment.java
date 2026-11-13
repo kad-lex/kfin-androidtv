@@ -92,6 +92,7 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
 
     private boolean justLoaded = true;
     private boolean gridInitialized = false;
+    private String mLastLoadSignature = null;
     private PosterSize mPosterSizeSetting = PosterSize.MED;
     private ImageType mImageType = ImageType.POSTER;
     private GridDirection mGridDirection = GridDirection.HORIZONTAL;
@@ -206,10 +207,11 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
             public void onGlobalLayout() {
                 binding.getRoot().getViewTreeObserver().removeOnGlobalLayoutListener(this);
                 final int gridTop = (int) (binding.getRoot().getHeight() * 0.55f);
+                final int blockTop = (int) (binding.getRoot().getHeight() * 0.26f);
 
-                // Align the info block (title → infoRow → overview) with the grid top boundary
+                // Info block (title → infoRow → overview) sits in the sharp backdrop area
                 ViewGroup.MarginLayoutParams titleLp = (ViewGroup.MarginLayoutParams) binding.title.getLayoutParams();
-                titleLp.topMargin = gridTop - 100; // block raised 100px above the boundary
+                titleLp.topMargin = blockTop;
                 binding.title.setLayoutParams(titleLp);
 
                 binding.getRoot().post(() -> {
@@ -689,6 +691,7 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
                 break;
         }
         mDirty = false;
+        mLastLoadSignature = null; // new adapter must fetch
 
         FilterOptions filters = new FilterOptions();
         filters.setFavoriteOnly(libraryPreferences.get(LibraryPreferences.Companion.getFilterFavoritesOnly()));
@@ -729,6 +732,16 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
         }
 
         mAdapter.setSortBy(getSortOption(libraryPreferences.get(LibraryPreferences.Companion.getSortBy())));
+
+        String signature = mAdapter.getQuerySignature();
+        if (signature.equals(mLastLoadSignature)
+                && mAdapter.getTotalItems() > 0
+                && mAdapter.getItemsLoaded() >= mAdapter.getTotalItems()) {
+            // Already fully loaded with this exact query; re-retrieving would rebuild
+            // the grid and make the content appear to reshuffle
+            return;
+        }
+        mLastLoadSignature = signature;
         mAdapter.Retrieve();
     }
 
