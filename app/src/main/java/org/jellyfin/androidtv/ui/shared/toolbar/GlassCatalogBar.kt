@@ -55,7 +55,6 @@ import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
 import org.jellyfin.androidtv.ui.playback.MediaManager
 import org.jellyfin.androidtv.ui.settings.compat.SettingsViewModel
-import org.jellyfin.androidtv.ui.shared.whiteGlow
 import org.jellyfin.androidtv.util.apiclient.getUrl
 import org.jellyfin.androidtv.util.apiclient.primaryImage
 import org.jellyfin.sdk.api.client.ApiClient
@@ -114,12 +113,7 @@ private fun GlassCatalogTab(
 
 	Box(
 		modifier = Modifier
-			.whiteGlow(cornerRadius = 40.dp, radius = 2.5.dp, alpha = 0.3f, enabled = isActive)
 			.clip(barShape)
-			.background(
-				if (isActive) Color.White.copy(alpha = 0.20f)
-				else Color.Transparent
-			)
 			.then(
 				if (isActive) Modifier.border(
 					2.dp,
@@ -176,12 +170,7 @@ private fun GlassIconButton(
 
 	Box(
 		modifier = Modifier
-			.whiteGlow(cornerRadius = 40.dp, radius = 2.5.dp, alpha = 0.3f, enabled = isFocused)
 			.clip(shape)
-			.background(
-				if (isFocused) Color.White.copy(alpha = 0.20f)
-				else Color.Transparent
-			)
 			.then(
 				if (isFocused) Modifier.border(2.dp, Color(0xFFF8FAFC).copy(alpha = 0.8f), shape)
 				else Modifier
@@ -239,12 +228,7 @@ fun HomeStatusBar() {
 			modifier = Modifier
 				.size(36.dp)
 				.focusRequester(profileFocusRequester)
-				.whiteGlow(cornerRadius = 40.dp, radius = 2.5.dp, alpha = 0.3f, enabled = isProfileFocused)
 				.clip(RoundedCornerShape(40.dp))
-				.background(
-					if (isProfileFocused) Color.White.copy(alpha = 0.20f)
-					else Color.Transparent
-				)
 				.then(
 					if (isProfileFocused) Modifier.border(2.dp, Color(0xFFF8FAFC).copy(alpha = 0.8f), RoundedCornerShape(40.dp))
 					else Modifier

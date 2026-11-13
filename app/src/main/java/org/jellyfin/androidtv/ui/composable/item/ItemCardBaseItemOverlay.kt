@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
@@ -21,6 +23,7 @@ import org.jellyfin.androidtv.preference.UserPreferences
 import org.jellyfin.androidtv.preference.constant.WatchedIndicatorBehavior
 import org.jellyfin.androidtv.ui.base.Badge
 import org.jellyfin.androidtv.ui.base.Icon
+import org.jellyfin.androidtv.ui.base.Seekbar
 import org.jellyfin.androidtv.ui.base.Text
 import org.jellyfin.androidtv.ui.composable.rememberPlayerProgress
 import org.jellyfin.androidtv.ui.composable.rememberQueueEntry
@@ -37,6 +40,7 @@ import org.koin.compose.koinInject
 @Stable
 fun ItemCardBaseItemOverlay(
 	item: BaseItemDto,
+	footer: (@Composable () -> Unit)? = null,
 ) = Box(
 	modifier = Modifier
 		.fillMaxSize()
@@ -51,6 +55,15 @@ fun ItemCardBaseItemOverlay(
 		item = item,
 		modifier = Modifier.align(Alignment.TopEnd)
 	)
+
+	Column(
+		modifier = Modifier.align(Alignment.BottomCenter),
+		verticalArrangement = Arrangement.spacedBy(Tokens.Space.spaceXs)
+	) {
+		ProgressIndicator(item = item)
+
+		if (footer != null) footer()
+	}
 }
 
 @Composable
@@ -131,6 +144,26 @@ private fun WatchIndicator(
 
 // Media types that need to show a user progress bar (based on playedPercentage in userData)
 private val progressMediaTypes = setOf(MediaType.VIDEO, MediaType.BOOK)
+
+@Composable
+private fun ProgressIndicator(
+	item: BaseItemDto,
+	modifier: Modifier = Modifier,
+) {
+	val playedPercentage = rememberPlayedPercentage(item)
+
+	if (playedPercentage != null) {
+		Box(modifier = modifier.padding(horizontal = 8.dp, vertical = 3.dp)) {
+			Seekbar(
+				progress = playedPercentage,
+				enabled = false,
+				modifier = Modifier
+					.fillMaxWidth()
+					.height(3.dp)
+			)
+		}
+	}
+}
 
 @Composable
 fun rememberPlayedPercentage(item: BaseItemDto): Float? {
