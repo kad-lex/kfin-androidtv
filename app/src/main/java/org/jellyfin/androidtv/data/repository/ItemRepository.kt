@@ -24,15 +24,13 @@ object ItemRepository {
 	)
 
 	// Lighter field set for home screen rows - excludes heavy fields like
-	// MediaStreams, Chapters, Trickplay that aren't needed for display.
+	// MediaSources, MediaStreams, Chapters, Trickplay that aren't needed for display.
 	// Full item data is fetched when user selects an item.
-	// MediaSources is included for resolution/HDR badges on cards.
 	val browseFields = setOf(
 		ItemFields.CAN_DELETE,
 		ItemFields.CHILD_COUNT,
 		ItemFields.DATE_CREATED,
 		ItemFields.GENRES,
-		ItemFields.MEDIA_SOURCES,
 		ItemFields.OVERVIEW,
 		ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
 	)

@@ -214,7 +214,7 @@ private fun CarouselSlide(
 				scaleType = ImageView.ScaleType.CENTER_CROP,
 				modifier = Modifier
 					.fillMaxSize()
-					.blur(19.dp)
+					.blur(21.dp)
 			)
 
 			Box(
@@ -276,10 +276,11 @@ private fun CarouselForeground(
 
 		Column(
 			modifier = Modifier
-				.align(Alignment.BottomCenter)
+				.align(Alignment.BottomStart)
 				.fillMaxWidth(0.58f)
 				.heightIn(max = 170.dp)
-				.offset(x = with(LocalDensity.current) { 5.toDp() }),
+				.padding(bottom = 50.dp)
+				.offset(x = with(LocalDensity.current) { 10.toDp() }),
 			verticalArrangement = Arrangement.spacedBy(10.dp),
 			horizontalAlignment = Alignment.Start
 		) {
