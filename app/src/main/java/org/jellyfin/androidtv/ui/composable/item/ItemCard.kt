@@ -31,10 +31,10 @@ fun ItemCard(
 	Box(
 		modifier = modifier
 			.shadow(
-				elevation = 4.dp,
+				elevation = 5.dp,
 				shape = shape,
-				ambientColor = Color.Black.copy(alpha = 0.5f),
-				spotColor = Color.Black.copy(alpha = 0.5f)
+				ambientColor = Color.Black.copy(alpha = 0.8f),
+				spotColor = Color.Black.copy(alpha = 0.8f)
 			)
 			.then(
 				if (focused) Modifier.shadow(

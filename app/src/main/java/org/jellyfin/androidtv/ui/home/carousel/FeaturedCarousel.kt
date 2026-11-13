@@ -8,7 +8,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,10 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,8 +28,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
@@ -46,8 +40,6 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -66,8 +58,6 @@ import org.jellyfin.androidtv.ui.composable.AsyncImage
 import org.jellyfin.androidtv.ui.home.HomeFocusCoordinator
 import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
-import org.jellyfin.androidtv.ui.shared.toolbar.StatusBarBlurState
-import org.jellyfin.androidtv.ui.shared.toolbar.WatchNowBlurState
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -78,7 +68,6 @@ import org.jellyfin.sdk.model.api.SortOrder
 import org.jellyfin.sdk.model.api.request.GetItemsRequest
 import org.koin.compose.koinInject
 import timber.log.Timber
-import kotlin.math.roundToInt
 
 @Composable
 fun FeaturedCarousel(
@@ -191,68 +180,12 @@ private suspend fun loadFeaturedItems(api: ApiClient): List<FeaturedCarouselItem
 
 @Composable
 private fun CarouselSlide(item: FeaturedCarouselItem) {
-	BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-		val screenWidth = maxWidth
-		val screenHeight = maxHeight
-		val density = LocalDensity.current
-		val statusBarMargin = with(density) { 20.toDp() }
-
+	Box(modifier = Modifier.fillMaxSize()) {
 		AsyncImage(
 			url = item.imageUrl,
 			scaleType = ImageView.ScaleType.CENTER_CROP,
 			modifier = Modifier.fillMaxSize()
 		)
-
-		val statusBarWidth = StatusBarBlurState.widthPx.intValue
-		val statusBarHeight = StatusBarBlurState.heightPx.intValue
-		if (statusBarWidth > 0 && statusBarHeight > 0) {
-			val maskWidth = with(density) { statusBarWidth.toDp() }
-			val maskHeight = with(density) { statusBarHeight.toDp() }
-			Box(
-				modifier = Modifier
-					.align(Alignment.TopEnd)
-					.padding(top = statusBarMargin, end = statusBarMargin)
-					.width(maskWidth)
-					.height(maskHeight)
-					.clip(RoundedCornerShape(40.dp))
-			) {
-				AsyncImage(
-					url = item.imageUrl,
-					scaleType = ImageView.ScaleType.CENTER_CROP,
-					modifier = Modifier
-						.requiredSize(screenWidth, screenHeight)
-						.offset(x = -(screenWidth - statusBarMargin - maskWidth), y = -statusBarMargin)
-						.blur(24.dp)
-						.alpha(0.8f)
-				)
-			}
-		}
-
-		val buttonWidth = WatchNowBlurState.widthPx.intValue
-		val buttonHeight = WatchNowBlurState.heightPx.intValue
-		if (buttonWidth > 0 && buttonHeight > 0) {
-			val maskX = with(density) { WatchNowBlurState.xPx.intValue.toDp() }
-			val maskY = with(density) { WatchNowBlurState.yPx.intValue.toDp() }
-			Box(
-				modifier = Modifier
-					.offset(x = maskX, y = maskY)
-					.size(
-						with(density) { buttonWidth.toDp() },
-						with(density) { buttonHeight.toDp() }
-					)
-					.clip(RoundedCornerShape(40.dp))
-			) {
-				AsyncImage(
-					url = item.imageUrl,
-					scaleType = ImageView.ScaleType.CENTER_CROP,
-					modifier = Modifier
-						.requiredSize(screenWidth, screenHeight)
-						.offset(x = -maskX, y = -maskY)
-						.blur(24.dp)
-						.alpha(0.8f)
-				)
-			}
-		}
 	}
 }
 
@@ -336,14 +269,9 @@ private fun CarouselForeground(
 				.align(Alignment.BottomStart)
 				.padding(
 					top = 4.dp,
-					bottom = with(LocalDensity.current) { 3.toDp() }
+					bottom = with(LocalDensity.current) { 6.toDp() }
 				)
 				.focusRequester(focusRequester)
-				.clip(watchNowShape)
-				.background(
-					if (watchNowFocused) Color.White.copy(alpha = 0.20f)
-					else Color.White.copy(alpha = 0.08f)
-				)
 				.then(
 					if (watchNowFocused) Modifier.shadow(
 						elevation = 5.dp,
@@ -351,6 +279,11 @@ private fun CarouselForeground(
 						ambientColor = Color.White.copy(alpha = 0.6f),
 						spotColor = Color.White.copy(alpha = 0.6f)
 					) else Modifier
+				)
+				.clip(watchNowShape)
+				.background(
+					if (watchNowFocused) Color.White.copy(alpha = 0.20f)
+					else Color.White.copy(alpha = 0.08f)
 				)
 				.border(
 					width = if (watchNowFocused) 2.dp else 1.dp,
@@ -387,14 +320,10 @@ private fun CarouselForeground(
 					}
 				}
 				.clickable(onClick = onWatchNow)
-				.padding(horizontal = 16.dp, vertical = 8.dp)
-				.onGloballyPositioned { coordinates ->
-					val position = coordinates.positionInRoot()
-					WatchNowBlurState.xPx.intValue = position.x.roundToInt()
-					WatchNowBlurState.yPx.intValue = position.y.roundToInt()
-					WatchNowBlurState.widthPx.intValue = coordinates.size.width
-					WatchNowBlurState.heightPx.intValue = coordinates.size.height
-				}
+				.padding(
+					horizontal = 16.dp - with(LocalDensity.current) { 2.5f.toDp() },
+					vertical = 8.dp
+				)
 		) {
 			Row(verticalAlignment = Alignment.CenterVertically) {
 				Icon(

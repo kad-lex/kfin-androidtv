@@ -204,7 +204,7 @@ class UserPreferences(context: Context) : SharedPreferenceStore(
 		/**
 		 * Set when watched indicators should show on MyImageCardViews
 		 */
-		var watchedIndicatorBehavior = enumPreference("pref_watched_indicator_behavior", WatchedIndicatorBehavior.ALWAYS)
+		var watchedIndicatorBehavior = enumPreference("pref_watched_indicator_behavior_kfin", WatchedIndicatorBehavior.ALWAYS)
 
 		/**
 		 * Enable series thumbnails in home screen rows

@@ -10,36 +10,25 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.data.service.BackgroundService
-import org.jellyfin.androidtv.ui.shared.toolbar.StatusBarBlurState
 import org.koin.compose.koinInject
 
 @Composable
@@ -88,50 +77,16 @@ fun AppBackground() {
 			label = "BackgroundTransition",
 		) { background ->
 			if (background != null) {
-				BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-					val screenWidth = maxWidth
-					val screenHeight = maxHeight
-
-					Image(
-						bitmap = background,
-						contentDescription = null,
-						alignment = Alignment.Center,
-						contentScale = ContentScale.Crop,
-						colorFilter = ColorFilter.tint(colorResource(R.color.background_filter), BlendMode.SrcAtop),
-						modifier = Modifier
-							.fillMaxSize()
-							.then(if (blurBackground) Modifier.blur(10.dp) else Modifier)
-					)
-
-					val statusBarMargin = with(LocalDensity.current) { 20.toDp() }
-					val statusBarWidth = StatusBarBlurState.widthPx.intValue
-					val statusBarHeight = StatusBarBlurState.heightPx.intValue
-					if (statusBarWidth > 0 && statusBarHeight > 0) {
-						val maskWidth = with(LocalDensity.current) { statusBarWidth.toDp() }
-						val maskHeight = with(LocalDensity.current) { statusBarHeight.toDp() }
-						Box(
-							modifier = Modifier
-								.align(Alignment.TopEnd)
-								.padding(top = statusBarMargin, end = statusBarMargin)
-								.width(maskWidth)
-								.height(maskHeight)
-								.clip(RoundedCornerShape(40.dp))
-						) {
-							Image(
-								bitmap = background,
-								contentDescription = null,
-								alignment = Alignment.TopCenter,
-								contentScale = ContentScale.Crop,
-								colorFilter = ColorFilter.tint(colorResource(R.color.background_filter), BlendMode.SrcAtop),
-								modifier = Modifier
-									.requiredSize(screenWidth, screenHeight)
-									.offset(x = -(screenWidth - statusBarMargin - maskWidth), y = -statusBarMargin)
-									.blur(24.dp)
-									.alpha(0.8f)
-							)
-						}
-					}
-				}
+				Image(
+					bitmap = background,
+					contentDescription = null,
+					alignment = Alignment.Center,
+					contentScale = ContentScale.Crop,
+					colorFilter = ColorFilter.tint(colorResource(R.color.background_filter), BlendMode.SrcAtop),
+					modifier = Modifier
+						.fillMaxSize()
+						.then(if (blurBackground) Modifier.blur(10.dp) else Modifier)
+				)
 			} else {
 				AppThemeBackground()
 			}

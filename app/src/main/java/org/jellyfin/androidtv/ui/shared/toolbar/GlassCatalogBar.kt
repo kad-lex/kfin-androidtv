@@ -34,7 +34,6 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -91,13 +90,9 @@ fun GlassCatalogBar(
 			)
 			.padding(
 				horizontal = 10.dp + halfSizeIncrease,
-				vertical = 2.dp + halfSizeIncrease
+				vertical = 2.dp + halfSizeIncrease + with(LocalDensity.current) { 1.toDp() }
 			)
-			.focusGroup()
-			.onGloballyPositioned { coordinates ->
-				StatusBarBlurState.widthPx.intValue = coordinates.size.width
-				StatusBarBlurState.heightPx.intValue = coordinates.size.height
-			},
+			.focusGroup(),
 		horizontalArrangement = Arrangement.spacedBy(2.dp),
 		verticalAlignment = Alignment.CenterVertically,
 		content = content
@@ -119,11 +114,6 @@ private fun GlassCatalogTab(
 
 	Box(
 		modifier = Modifier
-			.clip(barShape)
-			.background(
-				if (isActive) Color.White.copy(alpha = 0.20f)
-				else Color.Transparent
-			)
 			.then(
 				if (isActive) Modifier.shadow(
 					elevation = 5.dp,
@@ -131,6 +121,11 @@ private fun GlassCatalogTab(
 					ambientColor = Color.White.copy(alpha = 0.6f),
 					spotColor = Color.White.copy(alpha = 0.6f)
 				) else Modifier
+			)
+			.clip(barShape)
+			.background(
+				if (isActive) Color.White.copy(alpha = 0.20f)
+				else Color.Transparent
 			)
 			.then(
 				if (isActive) Modifier.border(
@@ -188,11 +183,6 @@ private fun GlassIconButton(
 
 	Box(
 		modifier = Modifier
-			.clip(shape)
-			.background(
-				if (isFocused) Color.White.copy(alpha = 0.20f)
-				else Color.Transparent
-			)
 			.then(
 				if (isFocused) Modifier.shadow(
 					elevation = 5.dp,
@@ -200,6 +190,11 @@ private fun GlassIconButton(
 					ambientColor = Color.White.copy(alpha = 0.6f),
 					spotColor = Color.White.copy(alpha = 0.6f)
 				) else Modifier
+			)
+			.clip(shape)
+			.background(
+				if (isFocused) Color.White.copy(alpha = 0.20f)
+				else Color.Transparent
 			)
 			.then(
 				if (isFocused) Modifier.border(2.dp, Color(0xFFF8FAFC).copy(alpha = 0.8f), shape)
@@ -258,11 +253,6 @@ fun HomeStatusBar() {
 			modifier = Modifier
 				.size(36.dp)
 				.focusRequester(profileFocusRequester)
-				.clip(RoundedCornerShape(40.dp))
-				.background(
-					if (isProfileFocused) Color.White.copy(alpha = 0.20f)
-					else Color.Transparent
-				)
 				.then(
 					if (isProfileFocused) Modifier.shadow(
 						elevation = 5.dp,
@@ -270,6 +260,11 @@ fun HomeStatusBar() {
 						ambientColor = Color.White.copy(alpha = 0.6f),
 						spotColor = Color.White.copy(alpha = 0.6f)
 					) else Modifier
+				)
+				.clip(RoundedCornerShape(40.dp))
+				.background(
+					if (isProfileFocused) Color.White.copy(alpha = 0.20f)
+					else Color.Transparent
 				)
 				.then(
 					if (isProfileFocused) Modifier.border(2.dp, Color(0xFFF8FAFC).copy(alpha = 0.8f), RoundedCornerShape(40.dp))

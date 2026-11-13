@@ -53,17 +53,6 @@ fun SettingsCustomizationScreen() {
 		}
 
 		item {
-			var watchedIndicatorBehavior by rememberPreference(userPreferences, UserPreferences.watchedIndicatorBehavior)
-
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_watched_indicator)) },
-				captionContent = { Text(stringResource(watchedIndicatorBehavior.nameRes)) },
-				onClick = { router.push(Routes.CUSTOMIZATION_WATCHED_INDICATOR) },
-				modifier = Modifier.focusKey(Routes.CUSTOMIZATION_WATCHED_INDICATOR)
-			)
-		}
-
-		item {
 			var seriesThumbnailsEnabled by rememberPreference(userPreferences, UserPreferences.seriesThumbnailsEnabled)
 
 			ListButton(
