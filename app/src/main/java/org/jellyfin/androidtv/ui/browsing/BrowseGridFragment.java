@@ -423,7 +423,7 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
                 default:
                     throw new IllegalStateException("Unexpected value: " + mPosterSizeSetting);
             }
-            ((VerticalGridPresenter) mGridPresenter).setNumberOfColumns(numCols);
+            ((VerticalGridPresenter) mGridPresenter).setNumberOfColumns(Math.max(numCols - 1, 1));
         } else if (mGridPresenter instanceof HorizontalGridPresenter) {
             int numRows;
             switch (posterSize) {
@@ -503,33 +503,29 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
             mCardsScreenEst = numRows * cardsCol;
             mCardsScreenStride = numRows;
         } else if (numCols > 0) {
-            double paddingPct = cardScaling / numCols;
-            double spacingPct = ((paddingPct / 2.0) * CARD_SPACING_PCT) * (numCols - 1);
+            int fullCols = numCols + 1; // cards keep their size; one column is freed for spacing
+            double paddingPct = cardScaling / fullCols;
+            double spacingPct = ((paddingPct / 2.0) * CARD_SPACING_PCT) * (fullCols - 1);
             if (mImageType == ImageType.BANNER) {
-                spacingPct = ((paddingPct / 2.0) * CARD_SPACING_HORIZONTAL_BANNER_PCT) * (numCols - 1);
+                spacingPct = ((paddingPct / 2.0) * CARD_SPACING_HORIZONTAL_BANNER_PCT) * (fullCols - 1);
             }
 
             double wastedSpacePct = paddingPct + spacingPct;
             double usableCardSpace = mGridWidth / (1.0 + wastedSpacePct); // decrease size
-            double cardWidth = usableCardSpace / numCols;
+            double cardWidth = usableCardSpace / fullCols;
 
             // fix any rounding errors and make pixel perfect
             cardHeightInt = (int) Math.round(getCardHeightBy(cardWidth, mImageType, mFolder));
             int cardWidthInt = (int) getCardWidthBy(cardHeightInt, mImageType, mFolder);
-            double cardPaddingLeftRightAdj = cardWidthInt * cardScaling;
-            spacingHorizontalInt = Math.max((int) (Math.round((cardPaddingLeftRightAdj / 2.0) * CARD_SPACING_PCT)), 0); // round spacing
-            if (mImageType == ImageType.BANNER) {
-                spacingHorizontalInt = Math.max((int) (Math.round((cardPaddingLeftRightAdj / 2.0) * CARD_SPACING_HORIZONTAL_BANNER_PCT)), 0); // round spacing
-            }
-            int paddingLeftRightInt = mGridWidth - ((cardWidthInt * numCols) + (spacingHorizontalInt * (numCols - 1)));
+
+            // distribute the freed column as extra horizontal spacing, same gap vertically
+            int totalSpacing = Math.max(mGridWidth - (cardWidthInt * numCols), 0);
+            spacingHorizontalInt = totalSpacing / Math.max(numCols - 1, 1);
+            spacingVerticalInt = spacingHorizontalInt;
+
+            int paddingLeftRightInt = totalSpacing - (spacingHorizontalInt * (numCols - 1));
             paddingLeftInt = Math.max(paddingLeftRightInt / 2, 0);
 
-            int sumSize = (cardWidthInt * numCols) + (spacingHorizontalInt * (numCols - 1)) + (paddingLeftInt * 2);
-            if (Math.abs(sumSize - mGridWidth) > 2) {
-                Timber.w("setAutoCardGridValues calculation delta > 2, something is off GridWidth <%s> sumSize <%s>!", mGridWidth, sumSize);
-            }
-            paddingTopInt = (int) Math.round((cardHeightInt * cardScaling) / 2.0);
-            spacingVerticalInt = Math.max((int) (Math.round(paddingTopInt * CARD_SPACING_PCT)), 0); // round spacing
             int cardsRow = (int) Math.round(((double) mGridHeight / (cardHeightInt + spacingVerticalInt)) + 0.5);
             mCardsScreenEst = numCols * cardsRow;
             mCardsScreenStride = numCols;
