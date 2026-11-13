@@ -576,8 +576,8 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
         super.onResume();
 
         PosterSize posterSizeSetting = libraryPreferences.get(LibraryPreferences.Companion.getPosterSize());
-        ImageType imageType = libraryPreferences.get(LibraryPreferences.Companion.getImageType());
-        GridDirection gridDirection = libraryPreferences.get(LibraryPreferences.Companion.getGridDirection());
+        ImageType imageType = ImageType.POSTER;
+        GridDirection gridDirection = GridDirection.VERTICAL;
 
         if (mImageType != imageType || mPosterSizeSetting != posterSizeSetting || mGridDirection != gridDirection || mDirty) {
             determiningPosterSize = true;
