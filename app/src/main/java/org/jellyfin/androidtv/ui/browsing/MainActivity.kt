@@ -9,8 +9,11 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
@@ -22,6 +25,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.zIndex
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -41,6 +45,8 @@ import org.jellyfin.androidtv.ui.base.ProvideLocalInteractionTracker
 import org.jellyfin.androidtv.ui.composable.compat.AppNavigationHost
 import org.jellyfin.androidtv.ui.home.HomeFocusCoordinator
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
+import org.jellyfin.androidtv.ui.playback.CustomPlaybackOverlayFragment
+import org.jellyfin.androidtv.ui.player.video.VideoPlayerFragment
 import org.jellyfin.androidtv.ui.screensaver.InAppScreensaver
 import org.jellyfin.androidtv.ui.settings.compat.MainActivitySettings
 import org.jellyfin.androidtv.ui.shared.toolbar.HomeStatusBar
@@ -93,7 +99,23 @@ class MainActivity : FragmentActivity() {
 						)
 
 						val playState by playbackManager.state.playState.collectAsState()
-						if (playState != PlayState.PLAYING && playState != PlayState.PAUSED) {
+						val isPlayerShown = remember { mutableStateOf(false) }
+						DisposableEffect(Unit) {
+							val callback = object : FragmentManager.FragmentLifecycleCallbacks() {
+								override fun onFragmentResumed(fm: FragmentManager, fragment: Fragment) {
+									isPlayerShown.value = fragment is CustomPlaybackOverlayFragment || fragment is VideoPlayerFragment
+								}
+
+								override fun onFragmentPaused(fm: FragmentManager, fragment: Fragment) {
+									if (fragment is CustomPlaybackOverlayFragment || fragment is VideoPlayerFragment) {
+										isPlayerShown.value = false
+									}
+								}
+							}
+							supportFragmentManager.registerFragmentLifecycleCallbacks(callback, true)
+							onDispose { supportFragmentManager.unregisterFragmentLifecycleCallbacks(callback) }
+						}
+						if (!isPlayerShown.value && playState != PlayState.PLAYING && playState != PlayState.PAUSED) {
 							val statusBarMargin = with(LocalDensity.current) { 20.toDp() }
 							Box(
 								modifier = Modifier

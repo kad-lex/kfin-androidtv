@@ -214,7 +214,7 @@ private fun CarouselSlide(
 				scaleType = ImageView.ScaleType.CENTER_CROP,
 				modifier = Modifier
 					.fillMaxSize()
-					.blur(14.dp)
+					.blur(19.dp)
 			)
 
 			Box(
@@ -319,7 +319,7 @@ private fun CarouselForeground(
 					bottom = with(LocalDensity.current) { 11.toDp() }
 				)
 				.focusRequester(focusRequester)
-				.whiteGlow(cornerRadius = 40.dp, radius = 5.dp, alpha = 0.6f, enabled = watchNowFocused)
+				.whiteGlow(cornerRadius = 40.dp, radius = 2.5.dp, alpha = 0.3f, enabled = watchNowFocused)
 				.clip(watchNowShape)
 				.background(Color(0xCC0B0D14))
 				.then(

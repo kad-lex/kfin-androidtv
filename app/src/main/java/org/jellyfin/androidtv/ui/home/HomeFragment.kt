@@ -81,7 +81,7 @@ class HomeFragment : Fragment() {
 			foregroundModifier = Modifier
 				.fillMaxWidth()
 				.height(carouselHeight),
-			blurBoundary = rowsTopBoundary,
+			blurBoundary = rowsTopBoundary + with(LocalDensity.current) { 50.toDp() },
 			focusRequester = carouselFocusRequester,
 			onMoveDown = { HomeFocusCoordinator.focusRows?.invoke(0) }
 		) {

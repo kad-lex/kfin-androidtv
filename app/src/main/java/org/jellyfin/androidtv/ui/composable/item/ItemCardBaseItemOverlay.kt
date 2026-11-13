@@ -156,6 +156,9 @@ private fun WatchIndicator(
 @Stable
 private fun QualityBadges(item: BaseItemDto) {
 	val videoStream = item.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+		?: item.mediaSources?.firstNotNullOfOrNull { source ->
+			source.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
+		}
 	val height = videoStream?.height
 	val resolution = when {
 		height == null -> null

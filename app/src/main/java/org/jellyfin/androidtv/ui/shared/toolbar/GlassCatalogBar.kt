@@ -114,7 +114,7 @@ private fun GlassCatalogTab(
 
 	Box(
 		modifier = Modifier
-			.whiteGlow(cornerRadius = 40.dp, radius = 5.dp, alpha = 0.6f, enabled = isActive)
+			.whiteGlow(cornerRadius = 40.dp, radius = 2.5.dp, alpha = 0.3f, enabled = isActive)
 			.clip(barShape)
 			.background(
 				if (isActive) Color.White.copy(alpha = 0.20f)
@@ -176,7 +176,7 @@ private fun GlassIconButton(
 
 	Box(
 		modifier = Modifier
-			.whiteGlow(cornerRadius = 40.dp, radius = 5.dp, alpha = 0.6f, enabled = isFocused)
+			.whiteGlow(cornerRadius = 40.dp, radius = 2.5.dp, alpha = 0.3f, enabled = isFocused)
 			.clip(shape)
 			.background(
 				if (isFocused) Color.White.copy(alpha = 0.20f)
@@ -239,7 +239,7 @@ fun HomeStatusBar() {
 			modifier = Modifier
 				.size(36.dp)
 				.focusRequester(profileFocusRequester)
-				.whiteGlow(cornerRadius = 40.dp, radius = 5.dp, alpha = 0.6f, enabled = isProfileFocused)
+				.whiteGlow(cornerRadius = 40.dp, radius = 2.5.dp, alpha = 0.3f, enabled = isProfileFocused)
 				.clip(RoundedCornerShape(40.dp))
 				.background(
 					if (isProfileFocused) Color.White.copy(alpha = 0.20f)

@@ -35,13 +35,13 @@ fun ItemCard(
 	Box(
 		modifier = modifier
 			.padding(glowPadding)
+			.whiteGlow(cornerRadius = 12.dp, radius = 2.5.dp, alpha = 0.3f, enabled = focused)
 			.shadow(
 				elevation = 5.dp,
 				shape = shape,
 				ambientColor = Color.Black.copy(alpha = 0.8f),
 				spotColor = Color.Black.copy(alpha = 0.8f)
 			)
-			.whiteGlow(cornerRadius = 12.dp, radius = 5.dp, alpha = 0.6f, enabled = focused)
 			.clip(shape)
 			.background(JellyfinTheme.colorScheme.surface, shape)
 			.then(if (focused) Modifier.border(focusBorderWidth, Tokens.Color.colorWhite.copy(alpha = 0.8f), shape) else Modifier)
