@@ -83,12 +83,15 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 	private var currentRow: ListRow? = null
 	private var justLoaded = true
 	var onFocusCarousel: (() -> Unit)? = null
+	var currentRowIndex = 0
+		private set
 
 	val rowCount: Int
 		get() = adapter?.size() ?: 0
 
 	fun focusRow(index: Int) {
 		val safeIndex = index.coerceIn(0, (rowCount - 1).coerceAtLeast(0))
+		currentRowIndex = safeIndex
 		selectedPosition = safeIndex
 		verticalGridView?.post { verticalGridView?.requestFocus() }
 	}
@@ -305,6 +308,8 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 			} else {
 				currentItem = item
 				currentRow = row as ListRow
+				@Suppress("UNCHECKED_CAST")
+				currentRowIndex = (adapter as? MutableObjectAdapter<Row>)?.indexOf(row) ?: currentRowIndex
 
 				val itemRowAdapter = row.adapter as? ItemRowAdapter
 				itemRowAdapter?.loadMoreItemsIfNeeded(itemRowAdapter.indexOf(item))

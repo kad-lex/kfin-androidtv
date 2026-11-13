@@ -62,7 +62,7 @@ class HomeFragment : Fragment() {
 				HomeFocusCoordinator.activate(
 					focusCarousel = { focusCarousel = true },
 					focusRows = { index -> fragment.focusRow(index) },
-					currentRow = { fragment.selectedPosition },
+					currentRow = { fragment.currentRowIndex },
 					rowCount = { fragment.rowCount }
 				)
 			}
