@@ -1,6 +1,7 @@
 package org.jellyfin.androidtv.ui.background
 
 import android.graphics.drawable.ColorDrawable
+import android.os.Build
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.data.service.BackgroundService
+import org.jellyfin.androidtv.util.coil.blurImageBitmap
 import org.koin.compose.koinInject
 
 @Composable
@@ -62,14 +64,23 @@ private fun AppThemeBackground() {
 
 @Composable
 fun AppBackground() {
+	val context = LocalContext.current
 	val backgroundService = koinInject<BackgroundService>()
 	val currentBackground by backgroundService.currentBackground.collectAsState()
-	val blurBackground by backgroundService.blurBackground.collectAsState()
 	val enabled by backgroundService.enabled.collectAsState()
 
 	if (enabled) {
+		val blurredBackground = remember(currentBackground, context) {
+			val current = currentBackground
+			if (current != null && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+				blurImageBitmap(context, current)
+			} else {
+				current
+			}
+		}
+
 		AnimatedContent(
-			targetState = currentBackground,
+			targetState = blurredBackground,
 			transitionSpec = {
 				val duration = (BackgroundService.TRANSITION_DURATION.inWholeMilliseconds / 2).toInt()
 				fadeIn(tween(durationMillis = duration)) togetherWith fadeOut(snap(delayMillis = duration))
@@ -85,7 +96,7 @@ fun AppBackground() {
 					colorFilter = ColorFilter.tint(colorResource(R.color.background_filter), BlendMode.SrcAtop),
 					modifier = Modifier
 						.fillMaxSize()
-						.then(if (blurBackground) Modifier.blur(10.dp) else Modifier)
+						.then(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Modifier.blur(21.dp) else Modifier)
 				)
 			} else {
 				AppThemeBackground()

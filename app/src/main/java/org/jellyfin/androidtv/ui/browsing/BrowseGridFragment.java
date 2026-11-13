@@ -193,16 +193,6 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         binding = HorizontalGridBrowseBinding.inflate(inflater, container, false);
-        binding.getRoot().getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                binding.getRoot().getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                int gridTop = (int) (binding.getRoot().getHeight() * 0.55f);
-                android.view.ViewGroup.MarginLayoutParams lp = (android.view.ViewGroup.MarginLayoutParams) binding.rowsFragment.getLayoutParams();
-                lp.topMargin = Math.max(gridTop - binding.infoRow.getBottom(), 0);
-                binding.rowsFragment.setLayoutParams(lp);
-            }
-        });
         return binding.getRoot();
     }
 
@@ -210,9 +200,20 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        createGrid();
-        loadGrid();
-        addTools();
+        binding.getRoot().getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                binding.getRoot().getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                int gridTop = (int) (binding.getRoot().getHeight() * 0.55f);
+                ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) binding.rowsFragment.getLayoutParams();
+                lp.topMargin = Math.max(gridTop - binding.infoRow.getBottom(), 0);
+                binding.rowsFragment.setLayoutParams(lp);
+
+                createGrid();
+                loadGrid();
+                addTools();
+            }
+        });
     }
 
     @Override
@@ -291,9 +292,11 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
         if (item != null) {
             binding.title.setText(item.getFullName(requireContext()));
             InfoLayoutHelper.addInfoRow(requireContext(), item.getBaseItem(), binding.infoRow, true);
+            binding.overview.setText(item.getBaseItem() != null ? item.getBaseItem().getOverview() : null);
         } else {
             binding.title.setText("");
             binding.infoRow.removeAllViews();
+            binding.overview.setText(null);
         }
     }
 
