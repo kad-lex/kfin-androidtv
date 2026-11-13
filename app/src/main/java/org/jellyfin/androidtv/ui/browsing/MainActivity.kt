@@ -26,6 +26,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
@@ -121,15 +122,15 @@ class MainActivity : FragmentActivity() {
 						}
 						AnimatedVisibility(
 							visible = !isPlayerShown.value && playState != PlayState.PLAYING && playState != PlayState.PAUSED,
+							modifier = Modifier.align(Alignment.TopStart),
 							enter = fadeIn(tween(300)),
 							exit = fadeOut(tween(300))
 						) {
 							val statusBarMargin = with(LocalDensity.current) { 20.toDp() }
 							Box(
 								modifier = Modifier
-									.align(Alignment.TopEnd)
 									.zIndex(1f)
-									.padding(top = statusBarMargin, end = statusBarMargin)
+									.padding(start = 28.dp, top = statusBarMargin)
 									.onKeyEvent { keyEvent ->
 										if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionDown) {
 											HomeFocusCoordinator.moveToCarousel()

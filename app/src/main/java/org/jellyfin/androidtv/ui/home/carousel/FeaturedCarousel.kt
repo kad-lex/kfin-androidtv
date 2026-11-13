@@ -47,6 +47,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -232,6 +233,19 @@ private fun CarouselSlide(
 					}
 			)
 		}
+
+		Box(
+			modifier = Modifier
+				.fillMaxSize()
+				.background(
+					Brush.verticalGradient(
+						0f to Color.Transparent,
+						boundaryFraction to Color.Transparent,
+						(boundaryFraction + fadeFraction).coerceAtMost(1f) to Color.Black.copy(alpha = 0.1f),
+						1f to Color.Black.copy(alpha = 0.1f)
+					)
+				)
+		)
 	}
 }
 
@@ -255,7 +269,7 @@ private fun CarouselForeground(
 				url = item.logoUrl,
 				scaleType = ImageView.ScaleType.FIT_CENTER,
 				modifier = Modifier
-					.align(Alignment.TopStart)
+					.align(Alignment.TopEnd)
 					.width(240.dp)
 					.height(86.dp)
 			)
@@ -268,8 +282,9 @@ private fun CarouselForeground(
 				lineHeight = 34.sp,
 				overflow = TextOverflow.Ellipsis,
 				maxLines = 2,
+				textAlign = TextAlign.End,
 				modifier = Modifier
-					.align(Alignment.TopStart)
+					.align(Alignment.TopEnd)
 					.fillMaxWidth(0.5f)
 			)
 		}
