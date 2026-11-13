@@ -9,14 +9,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -196,7 +193,9 @@ private fun CarouselSlide(
 	blurBoundary: Dp,
 ) {
 	BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-		val boundaryFraction = with(LocalDensity.current) { blurBoundary.toPx() / maxHeight.toPx() }.coerceIn(0f, 1f)
+		val density = LocalDensity.current
+		val boundaryFraction = with(density) { blurBoundary.toPx() / maxHeight.toPx() }.coerceIn(0f, 1f)
+		val fadeFraction = with(density) { 100.toDp().toPx() / maxHeight.toPx() }
 
 		AsyncImage(
 			url = item.imageUrl,
@@ -224,7 +223,8 @@ private fun CarouselSlide(
 						drawRect(
 							brush = Brush.verticalGradient(
 								0f to Color.Transparent,
-								boundaryFraction to Color.Black,
+								boundaryFraction to Color.Transparent,
+								(boundaryFraction + fadeFraction).coerceAtMost(1f) to Color.Black,
 								1f to Color.Black
 							),
 							blendMode = BlendMode.DstIn
@@ -272,43 +272,6 @@ private fun CarouselForeground(
 					.align(Alignment.TopStart)
 					.fillMaxWidth(0.5f)
 			)
-		}
-
-		Column(
-			modifier = Modifier
-				.align(Alignment.BottomStart)
-				.fillMaxWidth(0.58f)
-				.heightIn(max = 170.dp)
-				.padding(bottom = 50.dp)
-				.offset(x = with(LocalDensity.current) { 10.toDp() }),
-			verticalArrangement = Arrangement.spacedBy(10.dp),
-			horizontalAlignment = Alignment.Start
-		) {
-			val metadata = listOfNotNull(
-				item.productionYear?.toString(),
-				item.runtimeText.takeIf { it.isNotBlank() },
-				item.communityRating?.takeIf { it > 0f }?.let { rating -> String.format("%.1f", rating) },
-				item.parentalRating?.takeIf { it.isNotBlank() }
-			).joinToString("  •  ")
-
-			if (metadata.isNotBlank()) {
-				Text(
-					text = metadata,
-					color = Color.White.copy(alpha = 0.8f),
-					fontSize = 15.sp
-				)
-			}
-
-			if (item.overview.isNotBlank()) {
-				Text(
-					text = item.overview,
-					color = Color.White.copy(alpha = 0.9f),
-					fontSize = 14.sp,
-					lineHeight = 20.sp,
-					overflow = TextOverflow.Ellipsis,
-					maxLines = 2
-				)
-			}
 		}
 
 		val watchNowShape = RoundedCornerShape(40.dp)
@@ -381,7 +344,7 @@ private fun CarouselForeground(
 				)
 				Spacer(Modifier.width(6.dp))
 				Text(
-					text = stringResource(R.string.watch_now),
+					text = stringResource(R.string.watch),
 					color = Color.White,
 					fontSize = 14.sp,
 					fontWeight = FontWeight.SemiBold

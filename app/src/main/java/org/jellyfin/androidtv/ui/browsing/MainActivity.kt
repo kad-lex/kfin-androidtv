@@ -6,6 +6,10 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -115,7 +119,11 @@ class MainActivity : FragmentActivity() {
 							supportFragmentManager.registerFragmentLifecycleCallbacks(callback, true)
 							onDispose { supportFragmentManager.unregisterFragmentLifecycleCallbacks(callback) }
 						}
-						if (!isPlayerShown.value && playState != PlayState.PLAYING && playState != PlayState.PAUSED) {
+						AnimatedVisibility(
+							visible = !isPlayerShown.value && playState != PlayState.PLAYING && playState != PlayState.PAUSED,
+							enter = fadeIn(tween(300)),
+							exit = fadeOut(tween(300))
+						) {
 							val statusBarMargin = with(LocalDensity.current) { 20.toDp() }
 							Box(
 								modifier = Modifier

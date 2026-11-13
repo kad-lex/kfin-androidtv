@@ -221,6 +221,7 @@
     <string name="pref_next_up_timeout_title">Длительность таймера \"Очередное\"</string>
     <string name="pref_next_up_timeout_summary">Задержка воспроизведения следующего элемента</string>
     <string name="watch_now">Смотреть сейчас</string>
+    <string name="watch">Смотреть</string>
     <string name="pref_about_title">О приложении</string>
     <string name="pref_app_theme">Тема приложения</string>
     <string name="pref_theme_emerald">Классическая изумрудная</string>
