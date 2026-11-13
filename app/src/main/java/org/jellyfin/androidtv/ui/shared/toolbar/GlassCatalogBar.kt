@@ -27,7 +27,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -56,6 +55,7 @@ import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
 import org.jellyfin.androidtv.ui.playback.MediaManager
 import org.jellyfin.androidtv.ui.settings.compat.SettingsViewModel
+import org.jellyfin.androidtv.ui.shared.whiteGlow
 import org.jellyfin.androidtv.util.apiclient.getUrl
 import org.jellyfin.androidtv.util.apiclient.primaryImage
 import org.jellyfin.sdk.api.client.ApiClient
@@ -90,7 +90,7 @@ fun GlassCatalogBar(
 			)
 			.padding(
 				horizontal = 10.dp + halfSizeIncrease,
-				vertical = 2.dp + halfSizeIncrease + with(LocalDensity.current) { 1.toDp() }
+				vertical = 2.dp + halfSizeIncrease + with(LocalDensity.current) { 2.toDp() }
 			)
 			.focusGroup(),
 		horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -114,14 +114,7 @@ private fun GlassCatalogTab(
 
 	Box(
 		modifier = Modifier
-			.then(
-				if (isActive) Modifier.shadow(
-					elevation = 5.dp,
-					shape = barShape,
-					ambientColor = Color.White.copy(alpha = 0.6f),
-					spotColor = Color.White.copy(alpha = 0.6f)
-				) else Modifier
-			)
+			.whiteGlow(cornerRadius = 40.dp, radius = 5.dp, alpha = 0.6f, enabled = isActive)
 			.clip(barShape)
 			.background(
 				if (isActive) Color.White.copy(alpha = 0.20f)
@@ -183,14 +176,7 @@ private fun GlassIconButton(
 
 	Box(
 		modifier = Modifier
-			.then(
-				if (isFocused) Modifier.shadow(
-					elevation = 5.dp,
-					shape = shape,
-					ambientColor = Color.White.copy(alpha = 0.6f),
-					spotColor = Color.White.copy(alpha = 0.6f)
-				) else Modifier
-			)
+			.whiteGlow(cornerRadius = 40.dp, radius = 5.dp, alpha = 0.6f, enabled = isFocused)
 			.clip(shape)
 			.background(
 				if (isFocused) Color.White.copy(alpha = 0.20f)
@@ -253,14 +239,7 @@ fun HomeStatusBar() {
 			modifier = Modifier
 				.size(36.dp)
 				.focusRequester(profileFocusRequester)
-				.then(
-					if (isProfileFocused) Modifier.shadow(
-						elevation = 5.dp,
-						shape = RoundedCornerShape(40.dp),
-						ambientColor = Color.White.copy(alpha = 0.6f),
-						spotColor = Color.White.copy(alpha = 0.6f)
-					) else Modifier
-				)
+				.whiteGlow(cornerRadius = 40.dp, radius = 5.dp, alpha = 0.6f, enabled = isProfileFocused)
 				.clip(RoundedCornerShape(40.dp))
 				.background(
 					if (isProfileFocused) Color.White.copy(alpha = 0.20f)

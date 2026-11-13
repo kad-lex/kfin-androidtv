@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import org.jellyfin.androidtv.ui.base.JellyfinTheme
+import org.jellyfin.androidtv.ui.shared.whiteGlow
 import org.jellyfin.design.Tokens
 
 @Composable
@@ -36,14 +37,7 @@ fun ItemCard(
 				ambientColor = Color.Black.copy(alpha = 0.8f),
 				spotColor = Color.Black.copy(alpha = 0.8f)
 			)
-			.then(
-				if (focused) Modifier.shadow(
-					elevation = 5.dp,
-					shape = shape,
-					ambientColor = Color.White.copy(alpha = 0.6f),
-					spotColor = Color.White.copy(alpha = 0.6f)
-				) else Modifier
-			)
+			.whiteGlow(cornerRadius = 12.dp, radius = 5.dp, alpha = 0.6f, enabled = focused)
 			.clip(shape)
 			.background(JellyfinTheme.colorScheme.surface, shape)
 			.then(if (focused) Modifier.border(focusBorderWidth, Tokens.Color.colorWhite.copy(alpha = 0.8f), shape) else Modifier)

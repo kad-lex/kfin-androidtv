@@ -28,12 +28,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -58,6 +62,7 @@ import org.jellyfin.androidtv.ui.composable.AsyncImage
 import org.jellyfin.androidtv.ui.home.HomeFocusCoordinator
 import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
+import org.jellyfin.androidtv.ui.shared.whiteGlow
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -184,8 +189,37 @@ private fun CarouselSlide(item: FeaturedCarouselItem) {
 		AsyncImage(
 			url = item.imageUrl,
 			scaleType = ImageView.ScaleType.CENTER_CROP,
-			modifier = Modifier.fillMaxSize()
+			modifier = Modifier
+				.fillMaxSize()
+				.blur(24.dp)
 		)
+
+		Box(
+			modifier = Modifier
+				.fillMaxSize()
+				.graphicsLayer { alpha = 0.99f }
+		) {
+			AsyncImage(
+				url = item.imageUrl,
+				scaleType = ImageView.ScaleType.CENTER_CROP,
+				modifier = Modifier.fillMaxSize()
+			)
+
+			Box(
+				modifier = Modifier
+					.fillMaxSize()
+					.drawBehind {
+						drawRect(
+							brush = Brush.verticalGradient(
+								0f to Color.Transparent,
+								0.5f to Color.Black,
+								1f to Color.Black
+							),
+							blendMode = BlendMode.DstIn
+						)
+					}
+			)
+		}
 	}
 }
 
@@ -269,27 +303,27 @@ private fun CarouselForeground(
 				.align(Alignment.BottomStart)
 				.padding(
 					top = 4.dp,
-					bottom = with(LocalDensity.current) { 6.toDp() }
+					bottom = with(LocalDensity.current) { 11.toDp() }
 				)
 				.focusRequester(focusRequester)
-				.then(
-					if (watchNowFocused) Modifier.shadow(
-						elevation = 5.dp,
-						shape = watchNowShape,
-						ambientColor = Color.White.copy(alpha = 0.6f),
-						spotColor = Color.White.copy(alpha = 0.6f)
-					) else Modifier
-				)
+				.whiteGlow(cornerRadius = 40.dp, radius = 5.dp, alpha = 0.6f, enabled = watchNowFocused)
 				.clip(watchNowShape)
-				.background(
-					if (watchNowFocused) Color.White.copy(alpha = 0.20f)
-					else Color.White.copy(alpha = 0.08f)
-				)
-				.border(
-					width = if (watchNowFocused) 2.dp else 1.dp,
-					color = if (watchNowFocused) Color(0xFFF8FAFC).copy(alpha = 0.8f)
-					else Color.White.copy(alpha = 0.12f),
-					shape = watchNowShape
+				.background(Color(0xCC0B0D14))
+				.then(
+					if (watchNowFocused) Modifier.border(
+						2.dp,
+						Color(0xFFF8FAFC).copy(alpha = 0.8f),
+						watchNowShape
+					) else Modifier.border(
+						1.dp,
+						Brush.verticalGradient(
+							listOf(
+								Color.White.copy(alpha = 0.10f),
+								Color.White.copy(alpha = 0.05f)
+							)
+						),
+						watchNowShape
+					)
 				)
 				.onFocusChanged { focusState -> onWatchNowFocusChanged(focusState.hasFocus) }
 				.onKeyEvent { keyEvent ->
