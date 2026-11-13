@@ -92,6 +92,7 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 	fun focusRow(index: Int) {
 		val safeIndex = index.coerceIn(0, (rowCount - 1).coerceAtLeast(0))
 		currentRowIndex = safeIndex
+		HomeFocusCoordinator.setRowsFocused(true)
 		selectedPosition = safeIndex
 		verticalGridView?.post { verticalGridView?.requestFocus() }
 	}
@@ -196,18 +197,6 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 
 	override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 		super.onViewCreated(view, savedInstanceState)
-
-		verticalGridView?.setOnKeyListener { _, keyCode, event ->
-			if (event?.action == KeyEvent.ACTION_DOWN) {
-				when (keyCode) {
-					KeyEvent.KEYCODE_DPAD_UP -> HomeFocusCoordinator.moveUp()
-					KeyEvent.KEYCODE_DPAD_DOWN -> HomeFocusCoordinator.moveDown()
-					else -> false
-				}
-			} else {
-				false
-			}
-		}
 	}
 
 	override fun onKey(v: View?, keyCode: Int, event: KeyEvent?): Boolean {
@@ -301,6 +290,7 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 			rowViewHolder: RowPresenter.ViewHolder?,
 			row: Row?,
 		) {
+			HomeFocusCoordinator.setRowsFocused(true)
 			if (item !is BaseRowItem) {
 				currentItem = null
 				//fill in default background

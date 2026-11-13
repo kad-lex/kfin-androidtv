@@ -140,7 +140,10 @@ private fun GlassCatalogTab(
 					barShape
 				) else Modifier
 			)
-			.onFocusChanged { focusState -> isFocused = focusState.hasFocus }
+			.onFocusChanged { focusState ->
+				isFocused = focusState.hasFocus
+				if (focusState.hasFocus) HomeFocusCoordinator.setRowsFocused(false)
+			}
 			.clickable(enabled = enabled, onClick = onClick)
 			.padding(horizontal = 8.dp, vertical = 6.dp)
 	) {
@@ -203,7 +206,10 @@ private fun GlassIconButton(
 				if (isFocused) Modifier.border(2.dp, Color(0xFFF8FAFC), shape)
 				else Modifier
 			)
-			.onFocusChanged { focusState -> isFocused = focusState.hasFocus }
+			.onFocusChanged { focusState ->
+				isFocused = focusState.hasFocus
+				if (focusState.hasFocus) HomeFocusCoordinator.setRowsFocused(false)
+			}
 			.clickable(onClick = onClick)
 			.padding(8.dp)
 	) {
@@ -270,7 +276,10 @@ fun HomeStatusBar() {
 					if (isProfileFocused) Modifier.border(2.dp, Color(0xFFF8FAFC), RoundedCornerShape(40.dp))
 					else Modifier
 				)
-				.onFocusChanged { focusState -> isProfileFocused = focusState.hasFocus }
+				.onFocusChanged { focusState ->
+					isProfileFocused = focusState.hasFocus
+					if (focusState.hasFocus) HomeFocusCoordinator.setRowsFocused(false)
+				}
 				.clickable {
 					mediaManager.clearAudioQueue()
 					sessionRepository.destroyCurrentSession()

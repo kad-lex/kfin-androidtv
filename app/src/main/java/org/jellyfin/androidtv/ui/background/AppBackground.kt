@@ -11,6 +11,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -77,16 +79,30 @@ fun AppBackground() {
 			label = "BackgroundTransition",
 		) { background ->
 			if (background != null) {
-				Image(
-					bitmap = background,
-					contentDescription = null,
-					alignment = Alignment.Center,
-					contentScale = ContentScale.Crop,
-					colorFilter = ColorFilter.tint(colorResource(R.color.background_filter), BlendMode.SrcAtop),
-					modifier = Modifier
-						.fillMaxSize()
-						.then(if (blurBackground) Modifier.blur(10.dp) else Modifier)
-				)
+				Box(modifier = Modifier.fillMaxSize()) {
+					Image(
+						bitmap = background,
+						contentDescription = null,
+						alignment = Alignment.Center,
+						contentScale = ContentScale.Crop,
+						colorFilter = ColorFilter.tint(colorResource(R.color.background_filter), BlendMode.SrcAtop),
+						modifier = Modifier
+							.fillMaxSize()
+							.then(if (blurBackground) Modifier.blur(10.dp) else Modifier)
+					)
+
+					Image(
+						bitmap = background,
+						contentDescription = null,
+						alignment = Alignment.TopCenter,
+						contentScale = ContentScale.Crop,
+						colorFilter = ColorFilter.tint(colorResource(R.color.background_filter), BlendMode.SrcAtop),
+						modifier = Modifier
+							.fillMaxWidth()
+							.height(56.dp)
+							.blur(24.dp)
+					)
+				}
 			} else {
 				AppThemeBackground()
 			}

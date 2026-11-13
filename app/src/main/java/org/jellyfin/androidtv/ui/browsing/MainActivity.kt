@@ -153,6 +153,16 @@ class MainActivity : FragmentActivity() {
 
 	// Forward key events to fragments
 
+	override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+		if (event.action == KeyEvent.ACTION_DOWN && HomeFocusCoordinator.isRowsFocused) {
+			when (event.keyCode) {
+				KeyEvent.KEYCODE_DPAD_UP -> if (HomeFocusCoordinator.moveUp()) return true
+				KeyEvent.KEYCODE_DPAD_DOWN -> if (HomeFocusCoordinator.moveDown()) return true
+			}
+		}
+		return super.dispatchKeyEvent(event)
+	}
+
 	private fun Fragment.onKeyEvent(keyCode: Int, event: KeyEvent?): Boolean {
 		var result = childFragmentManager.fragments.any { it.onKeyEvent(keyCode, event) }
 		if (!result && this is View.OnKeyListener) result = onKey(currentFocus, keyCode, event)

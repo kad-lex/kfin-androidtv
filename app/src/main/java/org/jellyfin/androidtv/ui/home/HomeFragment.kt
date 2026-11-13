@@ -72,23 +72,23 @@ class HomeFragment : Fragment() {
 		}
 
 		val carouselHeight = 280.dp
-		val backgroundExtraHeight = with(LocalDensity.current) { 70.toDp() }
+		val watchNowBottomPadding = 22.dp
+		val rowsTopBoundary = carouselHeight - watchNowBottomPadding + with(LocalDensity.current) { 1.toDp() }
 
 		FeaturedCarousel(
 			modifier = Modifier.fillMaxSize(),
-			backgroundModifier = Modifier
-				.fillMaxWidth()
-				.height(carouselHeight + backgroundExtraHeight),
+			backgroundModifier = Modifier.fillMaxSize(),
 			foregroundModifier = Modifier
 				.fillMaxWidth()
 				.height(carouselHeight),
+			fadeBoundary = rowsTopBoundary,
 			focusRequester = carouselFocusRequester,
 			onMoveDown = { HomeFocusCoordinator.focusRows?.invoke(0) }
 		) {
 			AndroidFragment<HomeRowsFragment>(
 				modifier = Modifier
 					.fillMaxSize()
-					.padding(top = carouselHeight)
+					.padding(top = rowsTopBoundary)
 					.focusGroup(),
 				maxLifecycle = Lifecycle.State.RESUMED,
 				onUpdate = { fragment ->

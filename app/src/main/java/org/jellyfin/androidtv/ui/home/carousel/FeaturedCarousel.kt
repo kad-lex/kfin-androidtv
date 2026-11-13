@@ -3,6 +3,7 @@ package org.jellyfin.androidtv.ui.home.carousel
 import android.graphics.Color as AndroidColor
 import android.widget.ImageView
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -42,6 +44,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -79,6 +82,7 @@ fun FeaturedCarousel(
 	modifier: Modifier = Modifier,
 	backgroundModifier: Modifier = Modifier,
 	foregroundModifier: Modifier = Modifier,
+	fadeBoundary: Dp,
 	focusRequester: FocusRequester,
 	onMoveDown: () -> Unit,
 	content: @Composable () -> Unit = {},
@@ -115,7 +119,7 @@ fun FeaturedCarousel(
 
 	val currentItem = items[currentIndex.coerceIn(items.indices)]
 	val fadeHeight = with(LocalDensity.current) { 70.toDp() }
-	val accentColor by produceState(
+	val calculatedAccentColor by produceState(
 		initialValue = Color(0xFF050608),
 		key1 = currentItem.imageBlurHash
 	) {
@@ -123,6 +127,11 @@ fun FeaturedCarousel(
 			calculateDominantAccentColor(currentItem.imageBlurHash)
 		}
 	}
+	val accentColor by animateColorAsState(
+		targetValue = calculatedAccentColor,
+		animationSpec = tween(durationMillis = 500),
+		label = "carouselAccentColor"
+	)
 
 	Box(modifier = modifier) {
 		Box(modifier = backgroundModifier) {
@@ -134,7 +143,8 @@ fun FeaturedCarousel(
 				CarouselSlide(
 					item = item,
 					accentColor = accentColor,
-					fadeHeight = fadeHeight
+					fadeHeight = fadeHeight,
+					fadeBoundary = fadeBoundary
 				)
 			}
 		}
@@ -150,7 +160,10 @@ fun FeaturedCarousel(
 				onPrevious = { currentIndex = if (currentIndex == 0) items.size - 1 else currentIndex - 1 },
 				onNext = { currentIndex = (currentIndex + 1) % items.size },
 				watchNowFocused = isWatchNowFocused,
-				onWatchNowFocusChanged = { focused -> isWatchNowFocused = focused },
+				onWatchNowFocusChanged = { focused ->
+					isWatchNowFocused = focused
+					if (focused) HomeFocusCoordinator.setRowsFocused(false)
+				},
 				focusRequester = focusRequester,
 				onMoveDown = onMoveDown,
 				modifier = Modifier.fillMaxSize()
@@ -228,12 +241,12 @@ private fun CarouselSlide(
 	item: FeaturedCarouselItem,
 	accentColor: Color,
 	fadeHeight: Dp,
+	fadeBoundary: Dp,
 ) {
 	val density = LocalDensity.current
-	val totalHeight = 280.dp + fadeHeight
-	val fadeStart = with(density) {
-		1f - fadeHeight.toPx() / totalHeight.toPx()
-	}.coerceIn(0f, 1f)
+	val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+	val boundaryFraction = with(density) { fadeBoundary.toPx() / screenHeight.toPx() }.coerceIn(0f, 1f)
+	val fadeStartFraction = with(density) { (fadeBoundary - fadeHeight).toPx() / screenHeight.toPx() }.coerceIn(0f, 1f)
 
 	Box(modifier = Modifier.fillMaxSize()) {
 		AsyncImage(
@@ -244,12 +257,26 @@ private fun CarouselSlide(
 
 		Box(
 			modifier = Modifier
+				.fillMaxWidth()
+				.height(56.dp)
+				.blur(24.dp)
+		) {
+			AsyncImage(
+				url = item.imageUrl,
+				scaleType = ImageView.ScaleType.CENTER_CROP,
+				modifier = Modifier.fillMaxSize()
+			)
+		}
+
+		Box(
+			modifier = Modifier
 				.fillMaxSize()
 				.background(
 					Brush.verticalGradient(
 						colorStops = arrayOf(
 							0f to Color.Transparent,
-							fadeStart to Color.Transparent,
+							fadeStartFraction to Color.Transparent,
+							boundaryFraction to accentColor,
 							1f to accentColor
 						)
 					)

@@ -4,6 +4,13 @@ object HomeFocusCoordinator {
 	var isActive = false
 		private set
 
+	var isRowsFocused = false
+		private set
+
+	fun setRowsFocused(value: Boolean) {
+		isRowsFocused = value
+	}
+
 	var focusCarousel: (() -> Unit)? = null
 		private set
 	var focusProfile: (() -> Unit)? = null
@@ -37,6 +44,7 @@ object HomeFocusCoordinator {
 
 	fun clear() {
 		isActive = false
+		isRowsFocused = false
 		focusCarousel = null
 		focusRows = null
 		currentRowProvider = { 0 }
