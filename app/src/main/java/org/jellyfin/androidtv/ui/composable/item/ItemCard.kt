@@ -9,13 +9,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.jellyfin.androidtv.ui.base.JellyfinTheme
-import org.jellyfin.androidtv.ui.shared.whiteGlow
 import org.jellyfin.design.Tokens
 
 @Composable
@@ -38,7 +43,7 @@ fun ItemCard(
 				ambientColor = Color.Black.copy(alpha = 0.8f),
 				spotColor = Color.Black.copy(alpha = 0.8f)
 			)
-			.whiteGlow(cornerRadius = 12.dp, radius = 2.5.dp, alpha = 0.3f, enabled = focused)
+			.cardGlow(12.dp, enabled = focused)
 			.clip(shape)
 			.background(JellyfinTheme.colorScheme.surface, shape)
 			.then(if (focused) Modifier.border(focusBorderWidth, Tokens.Color.colorWhite.copy(alpha = 0.8f), shape) else Modifier)
@@ -51,5 +56,19 @@ fun ItemCard(
 				content = overlay
 			)
 		}
+	}
+}
+
+private fun Modifier.cardGlow(cornerRadius: Dp, enabled: Boolean): Modifier = if (!enabled) this else drawBehind {
+	val strokeWidth = 2.dp.toPx()
+	listOf(2.dp, 4.dp, 6.dp, 8.dp).forEachIndexed { index, expand ->
+		val expandPx = expand.toPx()
+		drawRoundRect(
+			color = Color.White.copy(alpha = 0.5f - index * 0.12f),
+			topLeft = Offset(-expandPx, -expandPx),
+			size = Size(size.width + expandPx * 2, size.height + expandPx * 2),
+			cornerRadius = CornerRadius(cornerRadius.toPx() + expandPx),
+			style = Stroke(width = strokeWidth)
+		)
 	}
 }

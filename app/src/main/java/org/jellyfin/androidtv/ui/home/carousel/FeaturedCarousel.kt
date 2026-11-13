@@ -35,7 +35,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -54,6 +53,7 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -82,13 +82,13 @@ import org.jellyfin.sdk.model.api.SortOrder
 import org.jellyfin.sdk.model.api.request.GetItemsRequest
 import org.koin.compose.koinInject
 import timber.log.Timber
-import kotlin.math.sqrt
 
 @Composable
 fun FeaturedCarousel(
 	modifier: Modifier = Modifier,
 	backgroundModifier: Modifier = Modifier,
 	foregroundModifier: Modifier = Modifier,
+	blurBoundary: Dp,
 	focusRequester: FocusRequester,
 	onMoveDown: () -> Unit,
 	content: @Composable () -> Unit = {},
@@ -132,7 +132,10 @@ fun FeaturedCarousel(
 				animationSpec = tween(durationMillis = 500),
 				label = "featuredCarousel"
 			) { item ->
-				CarouselSlide(item = item)
+				CarouselSlide(
+					item = item,
+					blurBoundary = blurBoundary
+				)
 			}
 		}
 
@@ -194,34 +197,14 @@ private suspend fun loadFeaturedItems(api: ApiClient): List<FeaturedCarouselItem
 }
 
 @Composable
-private fun CarouselSlide(item: FeaturedCarouselItem) {
+private fun CarouselSlide(
+	item: FeaturedCarouselItem,
+	blurBoundary: Dp,
+) {
 	BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
 		val density = LocalDensity.current
-
-		// Diagonal blur boundary: 39% of height at the left edge, 54% at the right
-		val lineStart = with(density) { Offset(0f, (maxHeight * 0.39f).toPx()) }
-		val lineEnd = with(density) { Offset(maxWidth.toPx(), (maxHeight * 0.54f).toPx()) }
-		val normal = run {
-			val dx = lineEnd.x - lineStart.x
-			val dy = lineEnd.y - lineStart.y
-			val length = sqrt(dx * dx + dy * dy)
-			Offset(-dy / length, dx / length)
-		}
-		val fadePx = with(density) { 100.toDp().toPx() }
-		val fadeEnd = Offset(lineStart.x + normal.x * fadePx, lineStart.y + normal.y * fadePx)
-
-		val maskBrush = Brush.linearGradient(
-			0f to Color.Transparent,
-			1f to Color.Black,
-			start = lineStart,
-			end = fadeEnd
-		)
-		val dimBrush = Brush.linearGradient(
-			0f to Color.Transparent,
-			1f to Color.Black.copy(alpha = 0.3f),
-			start = lineStart,
-			end = fadeEnd
-		)
+		val boundaryFraction = with(density) { blurBoundary.toPx() / maxHeight.toPx() }.coerceIn(0f, 1f)
+		val fadeFraction = with(density) { 100.toDp().toPx() / maxHeight.toPx() }
 
 		AsyncImage(
 			url = item.imageUrl,
@@ -240,7 +223,7 @@ private fun CarouselSlide(item: FeaturedCarouselItem) {
 					scaleType = ImageView.ScaleType.CENTER_CROP,
 					modifier = Modifier
 						.fillMaxSize()
-						.blur(22.dp)
+						.blur(21.dp)
 				)
 			} else {
 				val context = LocalContext.current
@@ -265,7 +248,12 @@ private fun CarouselSlide(item: FeaturedCarouselItem) {
 					.fillMaxSize()
 					.drawBehind {
 						drawRect(
-							brush = maskBrush,
+							brush = Brush.verticalGradient(
+								0f to Color.Transparent,
+								boundaryFraction to Color.Transparent,
+								(boundaryFraction + fadeFraction).coerceAtMost(1f) to Color.Black,
+								1f to Color.Black
+							),
 							blendMode = BlendMode.DstIn
 						)
 					}
@@ -275,7 +263,14 @@ private fun CarouselSlide(item: FeaturedCarouselItem) {
 		Box(
 			modifier = Modifier
 				.fillMaxSize()
-				.background(dimBrush)
+				.background(
+					Brush.verticalGradient(
+						0f to Color.Transparent,
+						boundaryFraction to Color.Transparent,
+						(boundaryFraction + fadeFraction).coerceAtMost(1f) to Color.Black.copy(alpha = 0.3f),
+						1f to Color.Black.copy(alpha = 0.3f)
+					)
+				)
 		)
 	}
 }
