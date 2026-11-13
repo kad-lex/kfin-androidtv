@@ -4,6 +4,8 @@ import android.graphics.BlurMaskFilter
 import android.graphics.Paint
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.Dp
@@ -13,7 +15,15 @@ fun Modifier.whiteGlow(
 	radius: Dp,
 	alpha: Float,
 	enabled: Boolean = true,
-): Modifier = if (!enabled) this else drawBehind {
+	onTop: Boolean = false,
+): Modifier = if (!enabled) this else if (onTop) drawWithContent {
+	drawContent()
+	drawGlow(cornerRadius, radius, alpha)
+} else drawBehind {
+	drawGlow(cornerRadius, radius, alpha)
+}
+
+private fun DrawScope.drawGlow(cornerRadius: Dp, radius: Dp, alpha: Float) {
 	val glowPx = radius.toPx()
 	val cornerPx = cornerRadius.toPx()
 	val paint = Paint().apply {

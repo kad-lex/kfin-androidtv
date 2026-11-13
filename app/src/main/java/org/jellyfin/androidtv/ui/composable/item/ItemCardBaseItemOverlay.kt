@@ -4,8 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
@@ -23,7 +21,6 @@ import org.jellyfin.androidtv.preference.UserPreferences
 import org.jellyfin.androidtv.preference.constant.WatchedIndicatorBehavior
 import org.jellyfin.androidtv.ui.base.Badge
 import org.jellyfin.androidtv.ui.base.Icon
-import org.jellyfin.androidtv.ui.base.Seekbar
 import org.jellyfin.androidtv.ui.base.Text
 import org.jellyfin.androidtv.ui.composable.rememberPlayerProgress
 import org.jellyfin.androidtv.ui.composable.rememberQueueEntry
@@ -53,11 +50,6 @@ fun ItemCardBaseItemOverlay(
 	WatchIndicator(
 		item = item,
 		modifier = Modifier.align(Alignment.TopEnd)
-	)
-
-	ProgressIndicator(
-		item = item,
-		modifier = Modifier.align(Alignment.BottomCenter)
 	)
 }
 
@@ -141,30 +133,15 @@ private fun WatchIndicator(
 private val progressMediaTypes = setOf(MediaType.VIDEO, MediaType.BOOK)
 
 @Composable
-private fun ProgressIndicator(
-	item: BaseItemDto,
-	modifier: Modifier = Modifier,
-) {
+fun rememberPlayedPercentage(item: BaseItemDto): Float? {
 	val playbackManager = koinInject<PlaybackManager>()
 	val playState by playbackManager.state.playState.collectAsState()
 	val currentQueueEntry by rememberQueueEntry(playbackManager)
 
-	val playedPercentage = when {
+	return when {
 		playState == PlayState.PLAYING && currentQueueEntry?.baseItem?.id == item.id -> rememberPlayerProgress(playbackManager).value
 		item.mediaType in progressMediaTypes -> item.userData?.playedPercentage?.toFloat()?.div(100f)?.coerceIn(0f, 1f)
 
 		else -> null
-	}
-
-	if (playedPercentage != null) {
-		Box(modifier = modifier.padding(horizontal = 8.dp, vertical = 3.dp)) {
-			Seekbar(
-				progress = playedPercentage,
-				enabled = false,
-				modifier = Modifier
-					.fillMaxWidth()
-					.height(3.dp)
-			)
-		}
 	}
 }

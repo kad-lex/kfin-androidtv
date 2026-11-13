@@ -37,6 +37,7 @@ import org.jellyfin.androidtv.ui.base.Text
 import org.jellyfin.androidtv.ui.composable.AsyncImage
 import org.jellyfin.androidtv.ui.composable.item.ItemCard
 import org.jellyfin.androidtv.ui.composable.item.ItemCardBaseItemOverlay
+import org.jellyfin.androidtv.ui.composable.item.rememberPlayedPercentage
 import org.jellyfin.androidtv.ui.itemhandling.BaseItemDtoBaseRowItem
 import org.jellyfin.androidtv.ui.itemhandling.BaseRowItem
 import org.jellyfin.androidtv.ui.itemhandling.BaseRowType
@@ -358,6 +359,8 @@ private fun CardViewHolderContent(
 		else -> null
 	}
 
+	val progress = item.baseItem?.let { baseItem -> rememberPlayedPercentage(baseItem) }
+
 	val card = @Composable {
 		ItemCard(
 			focused = focused,
@@ -394,6 +397,7 @@ private fun CardViewHolderContent(
 				}
 			},
 			footer = footer,
+			progress = progress,
 			overlay = {
 				item.baseItem?.let { baseItem ->
 					ItemCardBaseItemOverlay(item = baseItem)

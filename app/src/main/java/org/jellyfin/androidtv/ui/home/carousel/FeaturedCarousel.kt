@@ -30,14 +30,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.Key
@@ -48,7 +46,6 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -244,8 +241,8 @@ private fun CarouselSlide(
 					Brush.verticalGradient(
 						0f to Color.Transparent,
 						boundaryFraction to Color.Transparent,
-						(boundaryFraction + fadeFraction).coerceAtMost(1f) to Color.Black.copy(alpha = 0.2f),
-						1f to Color.Black.copy(alpha = 0.2f)
+						(boundaryFraction + fadeFraction).coerceAtMost(1f) to Color.Black.copy(alpha = 0.3f),
+						1f to Color.Black.copy(alpha = 0.3f)
 					)
 				)
 		)
@@ -275,12 +272,6 @@ private fun CarouselForeground(
 					.align(Alignment.TopEnd)
 					.width(240.dp)
 					.height(86.dp)
-					.shadow(
-						elevation = 3.dp,
-						shape = RoundedCornerShape(8.dp),
-						ambientColor = Color.Black.copy(alpha = 0.5f),
-						spotColor = Color.Black.copy(alpha = 0.5f)
-					)
 			)
 		} else {
 			Text(
@@ -292,9 +283,6 @@ private fun CarouselForeground(
 				overflow = TextOverflow.Ellipsis,
 				maxLines = 2,
 				textAlign = TextAlign.End,
-				style = TextStyle(
-					shadow = Shadow(Color.Black.copy(alpha = 0.5f), blurRadius = 3f)
-				),
 				modifier = Modifier
 					.align(Alignment.TopEnd)
 					.fillMaxWidth(0.5f)

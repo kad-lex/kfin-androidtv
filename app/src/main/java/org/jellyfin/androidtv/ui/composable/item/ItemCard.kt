@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -20,6 +21,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import org.jellyfin.androidtv.ui.base.JellyfinTheme
+import org.jellyfin.androidtv.ui.base.Seekbar
 import org.jellyfin.androidtv.ui.shared.whiteGlow
 import org.jellyfin.design.Tokens
 
@@ -30,6 +32,7 @@ fun ItemCard(
 	image: @Composable BoxScope.() -> Unit,
 	footer: (@Composable () -> Unit)? = null,
 	overlay: (@Composable BoxScope.() -> Unit)? = null,
+	progress: Float? = null,
 	shape: Shape = JellyfinTheme.shapes.medium,
 	focused: Boolean = false,
 ) {
@@ -44,7 +47,7 @@ fun ItemCard(
 				ambientColor = Color.Black.copy(alpha = 0.8f),
 				spotColor = Color.Black.copy(alpha = 0.8f)
 			)
-			.whiteGlow(cornerRadius = 12.dp, radius = 2.5.dp, alpha = 0.3f, enabled = focused)
+			.whiteGlow(cornerRadius = 12.dp, radius = 2.5.dp, alpha = 0.3f, enabled = focused, onTop = true)
 			.clip(shape)
 			.background(Color(0xCC0B0D14))
 			.then(
@@ -68,6 +71,22 @@ fun ItemCard(
 					.fillMaxWidth()
 			) {
 				image()
+			}
+
+			if (progress != null) {
+				Box(
+					modifier = Modifier
+						.fillMaxWidth()
+						.padding(horizontal = 8.dp, vertical = 3.dp)
+				) {
+					Seekbar(
+						progress = progress,
+						enabled = false,
+						modifier = Modifier
+							.fillMaxWidth()
+							.height(3.dp)
+					)
+				}
 			}
 
 			if (footer != null) {
