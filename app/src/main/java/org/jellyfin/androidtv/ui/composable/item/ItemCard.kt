@@ -9,7 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -32,7 +32,7 @@ fun ItemCard(
 	shape: Shape = JellyfinTheme.shapes.medium,
 	focused: Boolean = false,
 ) {
-	val focusBorderWidth = with(LocalDensity.current) { 6.toDp() }
+	val focusBorderWidth = with(LocalDensity.current) { 7.toDp() }
 
 	Box(
 		modifier = modifier
@@ -43,10 +43,10 @@ fun ItemCard(
 				ambientColor = Color.Black.copy(alpha = 0.8f),
 				spotColor = Color.Black.copy(alpha = 0.8f)
 			)
-			.cardGlow(12.dp, enabled = focused)
 			.clip(shape)
 			.background(JellyfinTheme.colorScheme.surface, shape)
 			.then(if (focused) Modifier.border(focusBorderWidth, Tokens.Color.colorWhite.copy(alpha = 0.8f), shape) else Modifier)
+			.then(if (focused) Modifier.innerGlow(12.dp) else Modifier)
 	) {
 		image()
 
@@ -59,18 +59,20 @@ fun ItemCard(
 	}
 }
 
-private fun Modifier.cardGlow(cornerRadius: Dp, enabled: Boolean): Modifier = if (!enabled) this else drawBehind {
+private fun Modifier.innerGlow(cornerRadius: Dp, enabled: Boolean = true): Modifier = if (!enabled) this else drawWithContent {
+	drawContent()
+
 	val stepPx = 1.dp.toPx()
 	val strokeWidth = 1.5.dp.toPx()
 	val cornerPx = cornerRadius.toPx()
 
-	repeat(8) { i ->
-		val expandPx = (i + 1) * stepPx
+	repeat(4) { i ->
+		val insetPx = (i + 1) * stepPx
 		drawRoundRect(
-			color = Color.White.copy(alpha = 0.30f * (1f - i / 8f)),
-			topLeft = Offset(-expandPx, -expandPx),
-			size = Size(size.width + expandPx * 2, size.height + expandPx * 2),
-			cornerRadius = CornerRadius(cornerPx + expandPx),
+			color = Color.White.copy(alpha = 0.35f * (1f - i / 4f)),
+			topLeft = Offset(insetPx, insetPx),
+			size = Size(size.width - insetPx * 2, size.height - insetPx * 2),
+			cornerRadius = CornerRadius((cornerPx - insetPx).coerceAtLeast(0f)),
 			style = Stroke(width = strokeWidth)
 		)
 	}
