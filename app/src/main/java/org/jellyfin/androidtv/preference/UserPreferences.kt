@@ -199,7 +199,7 @@ class UserPreferences(context: Context) : SharedPreferenceStore(
 		/**
 		 * When to show the clock.
 		 */
-		var clockBehavior = enumPreference("pref_clock_behavior", ClockBehavior.ALWAYS)
+		var clockBehavior = enumPreference("pref_clock_behavior_kfin", ClockBehavior.NEVER)
 
 		/**
 		 * Set when watched indicators should show on MyImageCardViews

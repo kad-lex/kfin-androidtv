@@ -53,17 +53,6 @@ fun SettingsCustomizationScreen() {
 		}
 
 		item {
-			var clockBehavior by rememberPreference(userPreferences, UserPreferences.clockBehavior)
-
-			ListButton(
-				headingContent = { Text(stringResource(R.string.pref_clock_display)) },
-				captionContent = { Text(stringResource(clockBehavior.nameRes)) },
-				onClick = { router.push(Routes.CUSTOMIZATION_CLOCK) },
-				modifier = Modifier.focusKey(Routes.CUSTOMIZATION_CLOCK)
-			)
-		}
-
-		item {
 			var watchedIndicatorBehavior by rememberPreference(userPreferences, UserPreferences.watchedIndicatorBehavior)
 
 			ListButton(

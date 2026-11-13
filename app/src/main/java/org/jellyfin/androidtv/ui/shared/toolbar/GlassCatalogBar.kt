@@ -34,6 +34,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -98,7 +99,11 @@ fun GlassCatalogBar(
 				horizontal = 10.dp + halfSizeIncrease,
 				vertical = 2.dp + halfSizeIncrease
 			)
-			.focusGroup(),
+			.focusGroup()
+			.onGloballyPositioned { coordinates ->
+				StatusBarBlurState.widthPx.intValue = coordinates.size.width
+				StatusBarBlurState.heightPx.intValue = coordinates.size.height
+			},
 		horizontalArrangement = Arrangement.spacedBy(2.dp),
 		verticalAlignment = Alignment.CenterVertically,
 		content = content

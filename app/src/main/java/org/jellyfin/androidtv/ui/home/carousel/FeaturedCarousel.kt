@@ -45,7 +45,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,6 +59,7 @@ import org.jellyfin.androidtv.ui.composable.AsyncImage
 import org.jellyfin.androidtv.ui.home.HomeFocusCoordinator
 import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
+import org.jellyfin.androidtv.ui.shared.toolbar.StatusBarBlurState
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -190,21 +190,25 @@ private fun CarouselSlide(item: FeaturedCarouselItem) {
 		)
 
 		val statusBarMargin = with(LocalDensity.current) { 20.toDp() }
-		Box(
-			modifier = Modifier
-				.align(Alignment.TopEnd)
-				.padding(top = statusBarMargin, end = statusBarMargin)
-				.width(844.dp)
-				.height(54.dp)
-				.clip(RoundedCornerShape(40.dp))
-		) {
-			AsyncImage(
-				url = item.imageUrl,
-				scaleType = ImageView.ScaleType.CENTER_CROP,
+		val statusBarWidth = StatusBarBlurState.widthPx.intValue
+		val statusBarHeight = StatusBarBlurState.heightPx.intValue
+		if (statusBarWidth > 0 && statusBarHeight > 0) {
+			Box(
 				modifier = Modifier
-					.fillMaxSize()
-					.blur(24.dp)
-			)
+					.align(Alignment.TopEnd)
+					.padding(top = statusBarMargin, end = statusBarMargin)
+					.width(with(LocalDensity.current) { statusBarWidth.toDp() })
+					.height(with(LocalDensity.current) { statusBarHeight.toDp() })
+					.clip(RoundedCornerShape(40.dp))
+			) {
+				AsyncImage(
+					url = item.imageUrl,
+					scaleType = ImageView.ScaleType.CENTER_CROP,
+					modifier = Modifier
+						.fillMaxSize()
+						.blur(24.dp)
+				)
+			}
 		}
 	}
 }
@@ -254,7 +258,7 @@ private fun CarouselForeground(
 				.fillMaxWidth(0.58f)
 				.heightIn(max = 170.dp),
 			verticalArrangement = Arrangement.spacedBy(10.dp),
-			horizontalAlignment = Alignment.CenterHorizontally
+			horizontalAlignment = Alignment.Start
 		) {
 			val metadata = listOfNotNull(
 				item.productionYear?.toString(),
@@ -267,8 +271,7 @@ private fun CarouselForeground(
 				Text(
 					text = metadata,
 					color = Color.White.copy(alpha = 0.8f),
-					fontSize = 15.sp,
-					textAlign = TextAlign.Center
+					fontSize = 15.sp
 				)
 			}
 
@@ -279,80 +282,86 @@ private fun CarouselForeground(
 					fontSize = 14.sp,
 					lineHeight = 20.sp,
 					overflow = TextOverflow.Ellipsis,
-					maxLines = 2,
-					textAlign = TextAlign.Center
+					maxLines = 2
 				)
 			}
+		}
 
-			val watchNowShape = RoundedCornerShape(40.dp)
-			Box(
-				modifier = Modifier
-					.padding(top = 4.dp)
-					.focusRequester(focusRequester)
-					.clip(watchNowShape)
-					.background(
-						if (watchNowFocused) Color.White.copy(alpha = 0.20f)
-						else Color.White.copy(alpha = 0.08f)
-					)
-					.then(
-						if (watchNowFocused) Modifier.shadow(
-							elevation = 2.dp,
-							shape = watchNowShape,
-							ambientColor = Color.White.copy(alpha = 0.8f),
-							spotColor = Color.White.copy(alpha = 0.8f)
-						) else Modifier
-					)
-					.border(
-						width = if (watchNowFocused) 2.dp else 1.dp,
-						color = if (watchNowFocused) Color(0xFFF8FAFC).copy(alpha = 0.8f)
-						else Color.White.copy(alpha = 0.12f),
-						shape = watchNowShape
-					)
-					.onFocusChanged { focusState -> onWatchNowFocusChanged(focusState.hasFocus) }
-					.onKeyEvent { keyEvent ->
-						if (keyEvent.type != KeyEventType.KeyDown) return@onKeyEvent false
+		val watchNowShape = RoundedCornerShape(40.dp)
+		Box(
+			modifier = Modifier
+				.align(Alignment.BottomStart)
+				.padding(top = 4.dp)
+				.focusRequester(focusRequester)
+				.shadow(
+					elevation = 2.dp,
+					shape = watchNowShape,
+					ambientColor = Color.Black.copy(alpha = 0.5f),
+					spotColor = Color.Black.copy(alpha = 0.5f)
+				)
+				.clip(watchNowShape)
+				.background(
+					if (watchNowFocused) Color.White.copy(alpha = 0.20f)
+					else Color.White.copy(alpha = 0.08f)
+				)
+				.then(
+					if (watchNowFocused) Modifier.shadow(
+						elevation = 4.dp,
+						shape = watchNowShape,
+						ambientColor = Color.White.copy(alpha = 0.8f),
+						spotColor = Color.White.copy(alpha = 0.8f)
+					) else Modifier
+				)
+				.border(
+					width = if (watchNowFocused) 2.dp else 1.dp,
+					color = if (watchNowFocused) Color(0xFFF8FAFC).copy(alpha = 0.8f)
+					else Color.White.copy(alpha = 0.12f),
+					shape = watchNowShape
+				)
+				.onFocusChanged { focusState -> onWatchNowFocusChanged(focusState.hasFocus) }
+				.onKeyEvent { keyEvent ->
+					if (keyEvent.type != KeyEventType.KeyDown) return@onKeyEvent false
 
-						when (keyEvent.key) {
-							Key.DirectionLeft -> {
-								onPrevious()
-								true
-							}
-
-							Key.DirectionRight -> {
-								onNext()
-								true
-							}
-
-							Key.DirectionUp -> {
-								HomeFocusCoordinator.moveToProfile()
-								true
-							}
-
-							Key.DirectionDown -> {
-								onMoveDown()
-								true
-							}
-
-							else -> false
+					when (keyEvent.key) {
+						Key.DirectionLeft -> {
+							onPrevious()
+							true
 						}
+
+						Key.DirectionRight -> {
+							onNext()
+							true
+						}
+
+						Key.DirectionUp -> {
+							HomeFocusCoordinator.moveToProfile()
+							true
+						}
+
+						Key.DirectionDown -> {
+							onMoveDown()
+							true
+						}
+
+						else -> false
 					}
-					.clickable(onClick = onWatchNow)
-					.padding(horizontal = 16.dp, vertical = 8.dp)
-			) {
-				Row(verticalAlignment = Alignment.CenterVertically) {
-					Icon(
-						imageVector = ImageVector.vectorResource(R.drawable.ic_play),
-						contentDescription = null,
-						tint = Color.White
-					)
-					Spacer(Modifier.width(6.dp))
-					Text(
-						text = stringResource(R.string.watch_now),
-						color = Color.White,
-						fontSize = 14.sp,
-						fontWeight = FontWeight.SemiBold
-					)
 				}
+				.clickable(onClick = onWatchNow)
+				.padding(horizontal = 16.dp, vertical = 8.dp)
+		) {
+			Row(verticalAlignment = Alignment.CenterVertically) {
+				Icon(
+					imageVector = ImageVector.vectorResource(R.drawable.ic_play),
+					contentDescription = null,
+					tint = Color.White
+				)
+				Spacer(Modifier.width(6.dp))
+				Text(
+					text = stringResource(R.string.watch_now),
+					color = Color.White,
+					fontSize = 14.sp,
+					fontWeight = FontWeight.SemiBold
+				)
 			}
 		}
 	}

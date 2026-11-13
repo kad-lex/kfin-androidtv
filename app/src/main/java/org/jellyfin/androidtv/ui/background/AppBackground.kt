@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.data.service.BackgroundService
+import org.jellyfin.androidtv.ui.shared.toolbar.StatusBarBlurState
 import org.koin.compose.koinInject
 
 @Composable
@@ -97,24 +98,28 @@ fun AppBackground() {
 					)
 
 					val statusBarMargin = with(LocalDensity.current) { 20.toDp() }
-					Box(
-						modifier = Modifier
-							.align(Alignment.TopEnd)
-							.padding(top = statusBarMargin, end = statusBarMargin)
-							.width(844.dp)
-							.height(54.dp)
-							.clip(RoundedCornerShape(40.dp))
-					) {
-						Image(
-							bitmap = background,
-							contentDescription = null,
-							alignment = Alignment.TopCenter,
-							contentScale = ContentScale.Crop,
-							colorFilter = ColorFilter.tint(colorResource(R.color.background_filter), BlendMode.SrcAtop),
+					val statusBarWidth = StatusBarBlurState.widthPx.intValue
+					val statusBarHeight = StatusBarBlurState.heightPx.intValue
+					if (statusBarWidth > 0 && statusBarHeight > 0) {
+						Box(
 							modifier = Modifier
-								.fillMaxSize()
-								.blur(24.dp)
-						)
+								.align(Alignment.TopEnd)
+								.padding(top = statusBarMargin, end = statusBarMargin)
+								.width(with(LocalDensity.current) { statusBarWidth.toDp() })
+								.height(with(LocalDensity.current) { statusBarHeight.toDp() })
+								.clip(RoundedCornerShape(40.dp))
+						) {
+							Image(
+								bitmap = background,
+								contentDescription = null,
+								alignment = Alignment.TopCenter,
+								contentScale = ContentScale.Crop,
+								colorFilter = ColorFilter.tint(colorResource(R.color.background_filter), BlendMode.SrcAtop),
+								modifier = Modifier
+									.fillMaxSize()
+									.blur(24.dp)
+							)
+						}
 					}
 				}
 			} else {
