@@ -15,7 +15,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
@@ -47,60 +46,12 @@ fun ItemCard(
 				ambientColor = Color.Black.copy(alpha = 0.8f),
 				spotColor = Color.Black.copy(alpha = 0.8f)
 			)
-			.whiteGlow(cornerRadius = 12.dp, radius = 2.5.dp, alpha = 0.3f, enabled = focused, onTop = true)
+			.whiteGlow(cornerRadius = 12.dp, radius = 2.5.dp, alpha = 0.3f, enabled = focused)
 			.clip(shape)
-			.background(Color(0xCC0B0D14))
-			.then(
-				if (focused) Modifier.border(focusBorderWidth, Tokens.Color.colorWhite.copy(alpha = 0.8f), shape)
-				else Modifier.border(
-					1.dp,
-					Brush.verticalGradient(
-						listOf(
-							Color.White.copy(alpha = 0.10f),
-							Color.White.copy(alpha = 0.05f)
-						)
-					),
-					shape
-				)
-			)
+			.background(JellyfinTheme.colorScheme.surface, shape)
+			.then(if (focused) Modifier.border(focusBorderWidth, Tokens.Color.colorWhite.copy(alpha = 0.8f), shape) else Modifier)
 	) {
-		Column(modifier = Modifier.fillMaxSize()) {
-			Box(
-				modifier = Modifier
-					.weight(1f)
-					.fillMaxWidth()
-			) {
-				image()
-			}
-
-			if (progress != null) {
-				Box(
-					modifier = Modifier
-						.fillMaxWidth()
-						.padding(horizontal = 8.dp, vertical = 3.dp)
-				) {
-					Seekbar(
-						progress = progress,
-						enabled = false,
-						modifier = Modifier
-							.fillMaxWidth()
-							.height(3.dp)
-					)
-				}
-			}
-
-			if (footer != null) {
-				Box(
-					modifier = Modifier
-						.fillMaxWidth()
-						.background(Color(0xF20B0D14))
-						.padding(horizontal = 8.dp, vertical = 5.dp),
-					contentAlignment = Alignment.Center
-				) {
-					footer()
-				}
-			}
-		}
+		image()
 
 		if (overlay != null) {
 			Box(
@@ -108,5 +59,46 @@ fun ItemCard(
 				content = overlay
 			)
 		}
+
+		if (footer != null || progress != null) {
+			Column(
+				modifier = Modifier
+					.align(Alignment.BottomCenter)
+					.fillMaxWidth()
+			) {
+				if (progress != null) {
+					Box(
+						modifier = Modifier
+							.fillMaxWidth()
+							.padding(horizontal = 8.dp, vertical = 3.dp)
+					) {
+						Seekbar(
+							progress = progress,
+							enabled = false,
+							modifier = Modifier
+								.fillMaxWidth()
+								.height(3.dp)
+						)
+					}
+				}
+
+				if (footer != null) {
+					CardLip(content = footer)
+				}
+			}
+		}
+	}
+}
+
+@Composable
+private fun CardLip(content: @Composable () -> Unit) {
+	Box(
+		modifier = Modifier
+			.fillMaxWidth()
+			.background(Color(0xF20B0D14))
+			.padding(horizontal = 8.dp, vertical = 5.dp),
+		contentAlignment = Alignment.Center
+	) {
+		content()
 	}
 }
