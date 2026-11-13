@@ -1,8 +1,10 @@
 package org.jellyfin.androidtv.ui.home.carousel
 
+import android.os.Build
 import android.widget.ImageView
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -43,6 +45,8 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
@@ -53,6 +57,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import coil3.compose.rememberAsyncImagePainter
+import coil3.request.ImageRequest
+import coil3.request.transformations
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -64,6 +71,7 @@ import org.jellyfin.androidtv.ui.home.HomeFocusCoordinator
 import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
 import org.jellyfin.androidtv.ui.shared.whiteGlow
+import org.jellyfin.androidtv.util.coil.BackgroundBlurTransformation
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -209,13 +217,31 @@ private fun CarouselSlide(
 				.fillMaxSize()
 				.graphicsLayer { alpha = 0.99f }
 		) {
-			AsyncImage(
-				url = item.imageUrl,
-				scaleType = ImageView.ScaleType.CENTER_CROP,
-				modifier = Modifier
-					.fillMaxSize()
-					.blur(21.dp)
-			)
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+				AsyncImage(
+					url = item.imageUrl,
+					scaleType = ImageView.ScaleType.CENTER_CROP,
+					modifier = Modifier
+						.fillMaxSize()
+						.blur(21.dp)
+				)
+			} else {
+				val context = LocalContext.current
+				val blurredPainter = rememberAsyncImagePainter(
+					model = ImageRequest.Builder(context)
+						.data(item.imageUrl)
+						.transformations(BackgroundBlurTransformation(context))
+						.build(),
+					contentScale = ContentScale.Crop,
+				)
+
+				Image(
+					painter = blurredPainter,
+					contentDescription = null,
+					contentScale = ContentScale.Crop,
+					modifier = Modifier.fillMaxSize()
+				)
+			}
 
 			Box(
 				modifier = Modifier
