@@ -55,6 +55,7 @@ import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
 import org.jellyfin.androidtv.ui.playback.MediaManager
 import org.jellyfin.androidtv.ui.settings.compat.SettingsViewModel
+import org.jellyfin.androidtv.ui.shared.innerGlow
 import org.jellyfin.androidtv.util.apiclient.getUrl
 import org.jellyfin.androidtv.util.apiclient.primaryImage
 import org.jellyfin.sdk.api.client.ApiClient
@@ -116,11 +117,12 @@ private fun GlassCatalogTab(
 			.clip(barShape)
 			.then(
 				if (isActive) Modifier.border(
-					2.dp,
+					2.dp + with(LocalDensity.current) { 1.toDp() },
 					Color(0xFFF8FAFC).copy(alpha = 0.8f),
 					barShape
 				) else Modifier
 			)
+			.innerGlow(cornerRadius = 40.dp, enabled = isActive)
 			.onFocusChanged { focusState ->
 				isFocused = focusState.hasFocus
 				if (focusState.hasFocus) HomeFocusCoordinator.setRowsFocused(false)
@@ -172,9 +174,13 @@ private fun GlassIconButton(
 		modifier = Modifier
 			.clip(shape)
 			.then(
-				if (isFocused) Modifier.border(2.dp, Color(0xFFF8FAFC).copy(alpha = 0.8f), shape)
-				else Modifier
+				if (isFocused) Modifier.border(
+					2.dp + with(LocalDensity.current) { 1.toDp() },
+					Color(0xFFF8FAFC).copy(alpha = 0.8f),
+					shape
+				) else Modifier
 			)
+			.innerGlow(cornerRadius = 40.dp, enabled = isFocused)
 			.onFocusChanged { focusState ->
 				isFocused = focusState.hasFocus
 				if (focusState.hasFocus) HomeFocusCoordinator.setRowsFocused(false)
@@ -230,9 +236,13 @@ fun HomeStatusBar() {
 				.focusRequester(profileFocusRequester)
 				.clip(RoundedCornerShape(40.dp))
 				.then(
-					if (isProfileFocused) Modifier.border(2.dp, Color(0xFFF8FAFC).copy(alpha = 0.8f), RoundedCornerShape(40.dp))
-					else Modifier
+					if (isProfileFocused) Modifier.border(
+						2.dp + with(LocalDensity.current) { 1.toDp() },
+						Color(0xFFF8FAFC).copy(alpha = 0.8f),
+						RoundedCornerShape(40.dp)
+					) else Modifier
 				)
+				.innerGlow(cornerRadius = 40.dp, enabled = isProfileFocused)
 				.onFocusChanged { focusState ->
 					isProfileFocused = focusState.hasFocus
 					if (focusState.hasFocus) HomeFocusCoordinator.setRowsFocused(false)

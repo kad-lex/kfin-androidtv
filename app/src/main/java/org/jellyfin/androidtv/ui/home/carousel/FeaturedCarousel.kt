@@ -70,6 +70,7 @@ import org.jellyfin.androidtv.ui.composable.AsyncImage
 import org.jellyfin.androidtv.ui.home.HomeFocusCoordinator
 import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
+import org.jellyfin.androidtv.ui.shared.innerGlow
 import org.jellyfin.androidtv.ui.shared.whiteGlow
 import org.jellyfin.androidtv.util.coil.BackgroundBlurTransformation
 import org.jellyfin.sdk.api.client.ApiClient
@@ -329,7 +330,7 @@ private fun CarouselForeground(
 				.background(Color(0xCC0B0D14))
 				.then(
 					if (watchNowFocused) Modifier.border(
-						2.dp,
+						2.dp + with(LocalDensity.current) { 1.toDp() },
 						Color(0xFFF8FAFC).copy(alpha = 0.8f),
 						watchNowShape
 					) else Modifier.border(
@@ -343,6 +344,7 @@ private fun CarouselForeground(
 						watchNowShape
 					)
 				)
+				.innerGlow(cornerRadius = 40.dp, enabled = watchNowFocused)
 				.onFocusChanged { focusState -> onWatchNowFocusChanged(focusState.hasFocus) }
 				.onKeyEvent { keyEvent ->
 					if (keyEvent.type != KeyEventType.KeyDown) return@onKeyEvent false

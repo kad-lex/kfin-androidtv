@@ -11,6 +11,7 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.ImageButton;
 import android.widget.PopupMenu;
 import android.widget.PopupWindow;
@@ -135,8 +136,8 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
 
         // init with some working defaults
         DisplayMetrics display = requireContext().getResources().getDisplayMetrics();
-        // top + bottom in dp, elements scale with density so adjust accordingly
-        mGridHeight = Math.round(display.heightPixels / getResources().getDisplayMetrics().density - 130.6f);
+        // grid starts at 55% of the screen height, so it occupies the bottom 45%
+        mGridHeight = Math.round(display.heightPixels * 0.45f / getResources().getDisplayMetrics().density - 16f);
         mGridWidth = Math.round(display.widthPixels / getResources().getDisplayMetrics().density);
 
 
@@ -192,6 +193,16 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         binding = HorizontalGridBrowseBinding.inflate(inflater, container, false);
+        binding.getRoot().getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                binding.getRoot().getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                int gridTop = (int) (binding.getRoot().getHeight() * 0.55f);
+                android.view.ViewGroup.MarginLayoutParams lp = (android.view.ViewGroup.MarginLayoutParams) binding.rowsFragment.getLayoutParams();
+                lp.topMargin = Math.max(gridTop - binding.infoRow.getBottom(), 0);
+                binding.rowsFragment.setLayoutParams(lp);
+            }
+        });
         return binding.getRoot();
     }
 
@@ -624,7 +635,7 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
             chunkSize = Math.min(mCardsScreenEst + mCardsScreenStride, 150); // cap at 150
             Timber.d("buildAdapter adjusting chunkSize to <%s> screenEst <%s>", chunkSize, mCardsScreenEst);
         }
-        chunkSize=100;
+        chunkSize = 10000; // load the entire library in one request to avoid paging glitches while scrolling
 
         switch (mRowDef.getQueryType()) {
             case NextUp:

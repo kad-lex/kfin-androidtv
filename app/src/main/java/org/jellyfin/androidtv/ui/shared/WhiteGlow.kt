@@ -5,10 +5,16 @@ import android.graphics.Paint
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
 fun Modifier.whiteGlow(
 	cornerRadius: Dp,
@@ -21,6 +27,25 @@ fun Modifier.whiteGlow(
 	drawGlow(cornerRadius, radius, alpha)
 } else drawBehind {
 	drawGlow(cornerRadius, radius, alpha)
+}
+
+fun Modifier.innerGlow(cornerRadius: Dp, enabled: Boolean = true): Modifier = if (!enabled) this else drawWithContent {
+	drawContent()
+
+	val stepPx = 1.dp.toPx()
+	val strokeWidth = 1.5.dp.toPx()
+	val cornerPx = cornerRadius.toPx()
+
+	repeat(4) { i ->
+		val insetPx = (i + 1) * stepPx
+		drawRoundRect(
+			color = Color.White.copy(alpha = 0.35f * (1f - i / 4f)),
+			topLeft = Offset(insetPx, insetPx),
+			size = Size(size.width - insetPx * 2, size.height - insetPx * 2),
+			cornerRadius = CornerRadius((cornerPx - insetPx).coerceAtLeast(0f)),
+			style = Stroke(width = strokeWidth)
+		)
+	}
 }
 
 private fun DrawScope.drawGlow(cornerRadius: Dp, radius: Dp, alpha: Float) {
