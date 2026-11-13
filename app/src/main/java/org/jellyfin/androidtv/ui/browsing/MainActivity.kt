@@ -133,8 +133,12 @@ class MainActivity : FragmentActivity() {
 									.padding(start = 28.dp, top = statusBarMargin)
 									.onKeyEvent { keyEvent ->
 										if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionDown) {
-											HomeFocusCoordinator.moveToCarousel()
-											true
+											if (HomeFocusCoordinator.isActive) {
+												HomeFocusCoordinator.moveToCarousel()
+												true
+											} else {
+												false
+											}
 										} else {
 											false
 										}

@@ -58,7 +58,6 @@ import org.jellyfin.sdk.model.api.LibraryChangedMessage
 import org.jellyfin.sdk.model.api.UserDataChangedMessage
 import org.koin.android.ext.android.inject
 import timber.log.Timber
-import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.seconds
 
 class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyListener {
@@ -198,14 +197,6 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 
 	override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 		super.onViewCreated(view, savedInstanceState)
-
-		val density = resources.displayMetrics.density
-		verticalGridView?.setPaddingRelative(
-			(23 * density).roundToInt(),
-			verticalGridView?.paddingTop ?: 0,
-			verticalGridView?.paddingEnd ?: 0,
-			verticalGridView?.paddingBottom ?: 0
-		)
 	}
 
 	override fun onKey(v: View?, keyCode: Int, event: KeyEvent?): Boolean {

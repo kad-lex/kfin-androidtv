@@ -26,6 +26,8 @@
         <item name="popupMenuBackground">@color/popup_menu_background</item>
         <!-- Header text color -->
         <item name="headerTextColor">@color/white</item>
+        <!-- Rows content start padding -->
+        <item name="browsePaddingStart">28dp</item>
 
         <!-- Progress Bar -->
         <item name="progressBackground">@color/grey_transparent</item>

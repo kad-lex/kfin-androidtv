@@ -5,7 +5,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
@@ -30,18 +29,16 @@ fun ItemCard(
 ) {
 	val focusBorderWidth = with(LocalDensity.current) { 6.toDp() }
 
-	val glowPadding = 5.dp
-
 	Box(
 		modifier = modifier
-			.padding(glowPadding)
-			.whiteGlow(cornerRadius = 12.dp, radius = 2.5.dp, alpha = 0.3f, enabled = focused)
 			.shadow(
 				elevation = 5.dp,
 				shape = shape,
+				clip = false,
 				ambientColor = Color.Black.copy(alpha = 0.8f),
 				spotColor = Color.Black.copy(alpha = 0.8f)
 			)
+			.whiteGlow(cornerRadius = 12.dp, radius = 2.5.dp, alpha = 0.3f, enabled = focused)
 			.clip(shape)
 			.background(JellyfinTheme.colorScheme.surface, shape)
 			.then(if (focused) Modifier.border(focusBorderWidth, Tokens.Color.colorWhite.copy(alpha = 0.8f), shape) else Modifier)
