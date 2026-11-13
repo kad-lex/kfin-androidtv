@@ -6,9 +6,7 @@ import android.widget.ImageView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -21,9 +19,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -33,7 +28,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.leanback.widget.Presenter
 import androidx.lifecycle.findViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
@@ -46,6 +40,7 @@ import org.jellyfin.androidtv.ui.base.Text
 import org.jellyfin.androidtv.ui.composable.AsyncImage
 import org.jellyfin.androidtv.ui.composable.item.ItemCard
 import org.jellyfin.androidtv.ui.composable.item.ItemCardBaseItemOverlay
+import org.jellyfin.androidtv.ui.composable.item.ItemPreview
 import org.jellyfin.androidtv.ui.itemhandling.BaseItemDtoBaseRowItem
 import org.jellyfin.androidtv.ui.itemhandling.BaseRowItem
 import org.jellyfin.androidtv.ui.itemhandling.BaseRowType
@@ -388,71 +383,38 @@ private fun CardViewHolderContent(
 		)
 	}
 
-	if (usePreview && (title != null || subtitle != null)) {
+	if (usePreview) {
 		val focusModifier = if (focused) Modifier.basicMarquee(
 			iterations = Int.MAX_VALUE,
 			initialDelayMillis = 0,
 		) else Modifier
 
-		Column(horizontalAlignment = Alignment.CenterHorizontally) {
-			card()
-
-			InfoCapsule(modifier = Modifier.padding(top = 4.dp)) {
-				Column(horizontalAlignment = Alignment.CenterHorizontally) {
-					title?.let { text ->
-						Text(
-							text = text,
-							maxLines = 1,
-							overflow = TextOverflow.Ellipsis,
-							textAlign = TextAlign.Center,
-							color = Tokens.Color.colorGrey100,
-							fontSize = 12.sp,
-							modifier = Modifier.then(focusModifier)
-						)
-					}
-
-					subtitle?.let { text ->
-						Text(
-							text = text,
-							maxLines = 1,
-							overflow = TextOverflow.Ellipsis,
-							textAlign = TextAlign.Center,
-							color = Tokens.Color.colorGrey300,
-							fontSize = 10.sp
-						)
-					}
+		ItemPreview(
+			card = { card() },
+			title = title?.let { text ->
+				{
+					Text(
+						text = text,
+						maxLines = 1,
+						overflow = TextOverflow.Ellipsis,
+						textAlign = TextAlign.Center,
+						modifier = Modifier.then(focusModifier),
+					)
 				}
-			}
-		}
+			},
+			subtitle = subtitle?.let { text ->
+				{
+					Text(
+						text = text,
+						maxLines = 1,
+						overflow = TextOverflow.Ellipsis,
+						textAlign = TextAlign.Center,
+						modifier = Modifier.then(focusModifier),
+					)
+				}
+			},
+		)
 	} else {
 		card()
-	}
-}
-
-@Composable
-private fun InfoCapsule(
-	modifier: Modifier = Modifier,
-	content: @Composable () -> Unit,
-) {
-	val shape = RoundedCornerShape(40.dp)
-
-	Box(
-		modifier = modifier
-			.clip(shape)
-			.background(Color(0xCC0B0D14))
-			.border(
-				1.dp,
-				Brush.verticalGradient(
-					listOf(
-						Color.White.copy(alpha = 0.10f),
-						Color.White.copy(alpha = 0.05f)
-					)
-				),
-				shape
-			)
-			.padding(horizontal = 10.dp, vertical = 4.dp),
-		contentAlignment = Alignment.Center
-	) {
-		content()
 	}
 }
