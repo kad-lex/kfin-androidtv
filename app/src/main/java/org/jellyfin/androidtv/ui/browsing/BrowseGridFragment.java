@@ -204,14 +204,23 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
             @Override
             public void onGlobalLayout() {
                 binding.getRoot().getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                int gridTop = (int) (binding.getRoot().getHeight() * 0.55f);
-                ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) binding.rowsFragment.getLayoutParams();
-                lp.topMargin = Math.max(gridTop - binding.infoRow.getBottom(), 0);
-                binding.rowsFragment.setLayoutParams(lp);
+                final int gridTop = (int) (binding.getRoot().getHeight() * 0.55f);
 
-                createGrid();
-                loadGrid();
-                addTools();
+                // Align the info block (title → infoRow → overview) with the grid top boundary
+                ViewGroup.MarginLayoutParams titleLp = (ViewGroup.MarginLayoutParams) binding.title.getLayoutParams();
+                titleLp.topMargin = gridTop;
+                binding.title.setLayoutParams(titleLp);
+
+                binding.getRoot().post(() -> {
+                    if (binding == null) return;
+                    ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) binding.rowsFragment.getLayoutParams();
+                    lp.topMargin = gridTop - binding.infoRow.getBottom(); // keep the grid top exactly at the boundary
+                    binding.rowsFragment.setLayoutParams(lp);
+
+                    createGrid();
+                    loadGrid();
+                    addTools();
+                });
             }
         });
     }

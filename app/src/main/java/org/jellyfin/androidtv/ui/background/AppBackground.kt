@@ -11,6 +11,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -19,10 +20,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
@@ -64,23 +69,13 @@ private fun AppThemeBackground() {
 
 @Composable
 fun AppBackground() {
-	val context = LocalContext.current
 	val backgroundService = koinInject<BackgroundService>()
 	val currentBackground by backgroundService.currentBackground.collectAsState()
 	val enabled by backgroundService.enabled.collectAsState()
 
 	if (enabled) {
-		val blurredBackground = remember(currentBackground, context) {
-			val current = currentBackground
-			if (current != null && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-				blurImageBitmap(context, current)
-			} else {
-				current
-			}
-		}
-
 		AnimatedContent(
-			targetState = blurredBackground,
+			targetState = currentBackground,
 			transitionSpec = {
 				val duration = (BackgroundService.TRANSITION_DURATION.inWholeMilliseconds / 2).toInt()
 				fadeIn(tween(durationMillis = duration)) togetherWith fadeOut(snap(delayMillis = duration))
@@ -88,19 +83,98 @@ fun AppBackground() {
 			label = "BackgroundTransition",
 		) { background ->
 			if (background != null) {
-				Image(
-					bitmap = background,
-					contentDescription = null,
-					alignment = Alignment.Center,
-					contentScale = ContentScale.Crop,
-					colorFilter = ColorFilter.tint(colorResource(R.color.background_filter), BlendMode.SrcAtop),
-					modifier = Modifier
-						.fillMaxSize()
-						.then(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) Modifier.blur(21.dp) else Modifier)
-				)
+				BackdropWithBlurBoundary(background)
 			} else {
 				AppThemeBackground()
 			}
 		}
+	}
+}
+
+// Fraction of screen height above which the backdrop stays sharp;
+// below the boundary it is blurred and darkened (matches the grid top at 55%).
+private const val BACKDROP_BLUR_BOUNDARY = 0.45f
+private const val BACKDROP_BLUR_FADE = 0.08f
+
+@Composable
+private fun BackdropWithBlurBoundary(bitmap: ImageBitmap) {
+	val context = LocalContext.current
+	val tint = ColorFilter.tint(colorResource(R.color.background_filter), BlendMode.SrcAtop)
+	val preBlurred = remember(bitmap, context) {
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) blurImageBitmap(context, bitmap) else null
+	}
+
+	BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+		val boundary = BACKDROP_BLUR_BOUNDARY
+		val fadeEnd = (BACKDROP_BLUR_BOUNDARY + BACKDROP_BLUR_FADE).coerceAtMost(1f)
+
+		// Sharp backdrop
+		Image(
+			bitmap = bitmap,
+			contentDescription = null,
+			alignment = Alignment.Center,
+			contentScale = ContentScale.Crop,
+			colorFilter = tint,
+			modifier = Modifier.fillMaxSize()
+		)
+
+		// Blurred backdrop, masked to the region below the boundary
+		Box(
+			modifier = Modifier
+				.fillMaxSize()
+				.graphicsLayer { alpha = 0.99f }
+		) {
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+				Image(
+					bitmap = bitmap,
+					contentDescription = null,
+					alignment = Alignment.Center,
+					contentScale = ContentScale.Crop,
+					colorFilter = tint,
+					modifier = Modifier
+						.fillMaxSize()
+						.blur(21.dp)
+				)
+			} else if (preBlurred != null) {
+				Image(
+					bitmap = preBlurred,
+					contentDescription = null,
+					alignment = Alignment.Center,
+					contentScale = ContentScale.Crop,
+					colorFilter = tint,
+					modifier = Modifier.fillMaxSize()
+				)
+			}
+
+			Box(
+				modifier = Modifier
+					.fillMaxSize()
+					.drawBehind {
+						drawRect(
+							brush = Brush.verticalGradient(
+								0f to Color.Transparent,
+								boundary to Color.Transparent,
+								fadeEnd to Color.Black,
+								1f to Color.Black
+							),
+							blendMode = BlendMode.DstIn
+						)
+					}
+			)
+		}
+
+		// Darkening below the boundary, same geometry
+		Box(
+			modifier = Modifier
+				.fillMaxSize()
+				.background(
+					Brush.verticalGradient(
+						0f to Color.Transparent,
+						boundary to Color.Transparent,
+						fadeEnd to Color.Black.copy(alpha = 0.3f),
+						1f to Color.Black.copy(alpha = 0.3f)
+					)
+				)
+		)
 	}
 }

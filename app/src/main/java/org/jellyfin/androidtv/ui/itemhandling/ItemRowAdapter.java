@@ -494,7 +494,7 @@ public class ItemRowAdapter extends MutableObjectAdapter<Object> {
     }
 
     private void retrieveNext() {
-        if (fullyLoaded || isCurrentlyRetrieving() || chunkSize == 0) {
+        if (fullyLoaded || isCurrentlyRetrieving() || chunkSize == 0 || (totalItems >= 0 && itemsLoaded >= totalItems)) {
             return;
         }
 
@@ -570,6 +570,12 @@ public class ItemRowAdapter extends MutableObjectAdapter<Object> {
     }
 
     public void Retrieve() {
+        if (isCurrentlyRetrieving()) {
+            // A retrieval is already in flight (e.g. onResume racing the initial layout);
+            // starting another one would duplicate items in setItems()
+            Timber.i("Skipping Retrieve, retrieval already in progress");
+            return;
+        }
         notifyRetrieveStarted();
         lastFullRetrieve = Instant.now();
         itemsLoaded = 0;
