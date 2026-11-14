@@ -153,7 +153,9 @@ private fun BaseRowItem.getDisplayConfig(imageType: ImageType, uniformAspect: Bo
 			aspectRatio = when (imageType) {
 				ImageType.BANNER -> ImageHelper.ASPECT_RATIO_BANNER.toFloat()
 				ImageType.THUMB -> ImageHelper.ASPECT_RATIO_16_9.toFloat()
-				else -> defaultAspectRatio
+				// KFIN: the browse grid passes uniformAspect=true; force one poster
+				// shape for all items so leanback lays the grid out uniformly
+				else -> if (uniformAspect) ImageHelper.ASPECT_RATIO_2_3.toFloat() else defaultAspectRatio
 			},
 			image = getImage(imageType),
 			iconRes = R.drawable.ic_clapperboard,
@@ -183,14 +185,14 @@ private fun BaseRowItem.getDisplayConfig(imageType: ImageType, uniformAspect: Bo
 				)
 
 				false -> base.copy(
-					aspectRatio = ImageHelper.ASPECT_RATIO_16_9.toFloat(),
+					aspectRatio = if (uniformAspect && imageType == ImageType.POSTER) ImageHelper.ASPECT_RATIO_2_3.toFloat() else ImageHelper.ASPECT_RATIO_16_9.toFloat(),
 					iconRes = R.drawable.ic_tv,
 					overrideShowInfo = true,
 				)
 			}
 
 			BaseItemKind.COLLECTION_FOLDER, BaseItemKind.USER_VIEW -> base.copy(
-				aspectRatio = ImageHelper.ASPECT_RATIO_16_9.toFloat(),
+				aspectRatio = if (uniformAspect && imageType == ImageType.POSTER) ImageHelper.ASPECT_RATIO_2_3.toFloat() else ImageHelper.ASPECT_RATIO_16_9.toFloat(),
 				iconRes = R.drawable.ic_folder,
 			)
 
