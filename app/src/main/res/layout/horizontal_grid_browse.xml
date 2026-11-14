@@ -99,6 +99,18 @@
         android:layout_marginStart="8sp"
         android:layout_alignParentEnd="true" />
 
+    <org.jellyfin.androidtv.ui.AsyncImageView
+        android:id="@+id/itemLogo"
+        android:layout_width="wrap_content"
+        android:layout_height="86dp"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="48dp"
+        android:layout_marginEnd="28dp"
+        android:maxWidth="320dp"
+        android:adjustViewBounds="true"
+        android:scaleType="fitCenter" />
+
     <org.jellyfin.androidtv.ui.NowPlayingView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

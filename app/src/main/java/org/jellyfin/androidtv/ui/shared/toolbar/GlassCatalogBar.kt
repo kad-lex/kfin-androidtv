@@ -74,7 +74,7 @@ fun GlassCatalogBar(
 
 	Row(
 		modifier = modifier
-			.widthIn(max = 840.dp + sizeIncrease)
+			.widthIn(max = 1240.dp + sizeIncrease)
 			.horizontalScroll(rememberScrollState())
 			.clip(barShape)
 			.background(Color(0xCC0B0D14))
@@ -162,9 +162,10 @@ private fun GlassCatalogTab(
 }
 
 @Composable
-private fun GlassIconButton(
+fun GlassIconButton(
 	icon: ImageVector,
 	contentDescription: String,
+	activated: Boolean = false,
 	onClick: () -> Unit,
 ) {
 	val shape = RoundedCornerShape(40.dp)
@@ -191,7 +192,7 @@ private fun GlassIconButton(
 		Icon(
 			imageVector = icon,
 			contentDescription = contentDescription,
-			tint = Color.White,
+			tint = if (activated) Color(0xFF00A4DC) else Color.White,
 			modifier = Modifier.size(18.dp)
 		)
 	}
@@ -305,5 +306,8 @@ fun HomeStatusBar() {
 		)
 
 		ToolbarClock()
+
+		// Screen-specific tools (e.g. library sort/filter buttons)
+		CatalogBarTools.content.value?.invoke(this)
 	}
 }

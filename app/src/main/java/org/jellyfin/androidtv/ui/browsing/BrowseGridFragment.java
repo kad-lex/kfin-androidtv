@@ -73,7 +73,6 @@ import java.util.Objects;
 import java.util.UUID;
 
 import kotlin.Lazy;
-import kotlinx.coroutines.flow.MutableStateFlow;
 import kotlinx.serialization.json.Json;
 import timber.log.Timber;
 
@@ -121,6 +120,7 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
     private final Lazy<ItemLauncher> itemLauncher = inject(ItemLauncher.class);
     private final Lazy<KeyProcessor> keyProcessor = inject(KeyProcessor.class);
     private final Lazy<ApiClient> api = inject(ApiClient.class);
+    private final Lazy<ImageHelper> imageHelper = inject(ImageHelper.class);
 
     private int mCardsScreenEst = 0;
     private int mCardsScreenStride = 0;
@@ -239,6 +239,7 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
     public void onDestroyView() {
         super.onDestroyView();
 
+        BrowseGridTools.INSTANCE.hide();
         binding = null;
         mGridView = null;
         gridInitialized = false;
@@ -307,10 +308,21 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
             binding.title.setText(item.getFullName(requireContext()));
             InfoLayoutHelper.addInfoRow(requireContext(), item.getBaseItem(), binding.infoRow, true);
             binding.overview.setText(item.getBaseItem() != null ? item.getBaseItem().getOverview() : null);
+            // KFIN: item logo in the top-right corner, over the sharp backdrop
+            String logoUrl = item.getBaseItem() != null
+                    ? imageHelper.getValue().getLogoImageUrl(item.getBaseItem(), 600)
+                    : null;
+            if (logoUrl != null) {
+                binding.itemLogo.setVisibility(View.VISIBLE);
+                binding.itemLogo.load(logoUrl, null, null, 2.0, 32);
+            } else {
+                binding.itemLogo.setVisibility(View.GONE);
+            }
         } else {
             binding.title.setText("");
             binding.infoRow.removeAllViews();
             binding.overview.setText(null);
+            binding.itemLogo.setVisibility(View.GONE);
         }
     }
 
@@ -542,19 +554,19 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
             double cardWidth = usableCardSpace / numCols;
 
             // fix any rounding errors and make pixel perfect
-            cardHeightInt = (int) Math.round(getCardHeightBy(cardWidth, mImageType, mFolder));
+            // KFIN: shrink cards by 5% so a visible gap appears between them at every scale
+            cardHeightInt = (int) Math.round(getCardHeightBy(cardWidth, mImageType, mFolder) * 0.95);
             int cardWidthInt = (int) getCardWidthBy(cardHeightInt, mImageType, mFolder);
-            double cardPaddingLeftRightAdj = cardWidthInt * cardScaling;
-            spacingHorizontalInt = Math.max((int) (Math.round((cardPaddingLeftRightAdj / 2.0) * CARD_SPACING_PCT)), 0); // round spacing
-            if (mImageType == ImageType.BANNER) {
-                spacingHorizontalInt = Math.max((int) (Math.round((cardPaddingLeftRightAdj / 2.0) * CARD_SPACING_HORIZONTAL_BANNER_PCT)), 0); // round spacing
-            }
-            int paddingLeftRightInt = mGridWidth - ((cardWidthInt * numCols) + (spacingHorizontalInt * (numCols - 1)));
-            paddingLeftInt = Math.max(paddingLeftRightInt / 2, 0);
+
+            // KFIN: distribute the freed space as equal gaps between cards and at the edges
+            int totalGapSpace = Math.max(mGridWidth - (cardWidthInt * numCols), 0);
+            int gap = totalGapSpace / (numCols + 1);
+            spacingHorizontalInt = gap;
+            paddingLeftInt = gap;
 
             int sumSize = (cardWidthInt * numCols) + (spacingHorizontalInt * (numCols - 1)) + (paddingLeftInt * 2);
-            if (Math.abs(sumSize - mGridWidth) > 2) {
-                Timber.w("setAutoCardGridValues calculation delta > 2, something is off GridWidth <%s> sumSize <%s>!", mGridWidth, sumSize);
+            if (Math.abs(sumSize - mGridWidth) > numCols + 2) {
+                Timber.w("setAutoCardGridValues calculation delta too large, something is off GridWidth <%s> sumSize <%s>!", mGridWidth, sumSize);
             }
             paddingTopInt = (int) Math.round((cardHeightInt * cardScaling) / 2.0);
             spacingVerticalInt = Math.max((int) (Math.round(paddingTopInt * CARD_SPACING_PCT)), 0); // round spacing
@@ -714,7 +726,7 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
                     setItem(null);
                     updateCounter(mAdapter.getTotalItems() > 0 ? 1 : 0);
                 }
-                mLetterButton.setVisibility(ItemSortBy.SORT_NAME.equals(mAdapter.getSortBy()) ? View.VISIBLE : View.GONE);
+                // KFIN: letter jump lives in the status bar and is always available
                 if (mAdapter.getItemsLoaded() == 0) {
                     mGridView.setFocusable(false);
                     mHandler.postDelayed(() -> {
@@ -753,11 +765,57 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
         mAdapter.Retrieve();
     }
 
-    private ImageButton mSortButton;
-    private ImageButton mSettingsButton;
-    private ImageButton mUnwatchedButton;
-    private ImageButton mFavoriteButton;
-    private ImageButton mLetterButton;
+    private JumplistPopup jumplistPopup;
+
+    public FilterOptions getFiltersSafe() {
+        FilterOptions filters = mAdapter != null ? mAdapter.getFilters() : null;
+        return filters != null ? filters : new FilterOptions();
+    }
+
+    public boolean isItemsQuery() {
+        return mRowDef != null && mRowDef.getQueryType() == QueryType.Items;
+    }
+
+    public void openSortMenu() {
+        //Create sort menu
+        PopupMenu sortMenu = new PopupMenu(getActivity(), binding.toolBar, Gravity.END);
+        for (Map.Entry<Integer, SortOption> entry : sortOptions.entrySet()) {
+            MenuItem item = sortMenu.getMenu().add(0, entry.getKey(), entry.getKey(), entry.getValue().name);
+            item.setChecked(entry.getValue().value.equals(libraryPreferences.get(LibraryPreferences.Companion.getSortBy())));
+        }
+        sortMenu.getMenu().setGroupCheckable(0, true, true);
+        sortMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                mAdapter.setSortBy(Objects.requireNonNull(sortOptions.get(item.getItemId())));
+                mAdapter.Retrieve();
+                item.setChecked(true);
+                updateDisplayPrefs();
+                return true;
+            }
+        });
+        sortMenu.show();
+    }
+
+    public void applyUnwatchedFilter(boolean unwatchedOnly) {
+        FilterOptions filters = getFiltersSafe();
+        filters.setUnwatchedOnly(unwatchedOnly);
+        mAdapter.setFilters(filters);
+        mAdapter.Retrieve();
+        updateDisplayPrefs();
+    }
+
+    public void applyFavoriteFilter(boolean favoriteOnly) {
+        FilterOptions filters = getFiltersSafe();
+        filters.setFavoriteOnly(favoriteOnly);
+        mAdapter.setFilters(filters);
+        mAdapter.Retrieve();
+        updateDisplayPrefs();
+    }
+
+    public void openJumplist() {
+        if (jumplistPopup != null) jumplistPopup.show();
+    }
 
     private void updateDisplayPrefs() {
         CoroutineUtils.runOnLifecycle(getLifecycle(), (coroutineScope, continuation) -> {
@@ -770,115 +828,9 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
     }
 
     private void addTools() {
-        //Add tools
-        int size = Utils.convertDpToPixel(requireContext(), 26);
-
-        mSortButton = new ImageButton(requireContext(), null, 0, R.style.Button_Icon);
-        mSortButton.setImageResource(R.drawable.ic_sort);
-        mSortButton.setMaxHeight(size);
-        mSortButton.setAdjustViewBounds(true);
-        mSortButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //Create sort menu
-                PopupMenu sortMenu = new PopupMenu(getActivity(), binding.toolBar, Gravity.END);
-                for (Map.Entry<Integer, SortOption> entry : sortOptions.entrySet()) {
-                    MenuItem item = sortMenu.getMenu().add(0, entry.getKey(), entry.getKey(), entry.getValue().name);
-                    item.setChecked(entry.getValue().value.equals(libraryPreferences.get(LibraryPreferences.Companion.getSortBy())));
-                }
-                sortMenu.getMenu().setGroupCheckable(0, true, true);
-                sortMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                    @Override
-                    public boolean onMenuItemClick(MenuItem item) {
-                        mAdapter.setSortBy(Objects.requireNonNull(sortOptions.get(item.getItemId())));
-                        mAdapter.Retrieve();
-                        item.setChecked(true);
-                        updateDisplayPrefs();
-                        return true;
-                    }
-                });
-                sortMenu.show();
-            }
-        });
-        mSortButton.setContentDescription(getString(R.string.lbl_sort_by));
-
-        binding.toolBar.addView(mSortButton);
-
-        if (mRowDef.getQueryType() == QueryType.Items) {
-            mUnwatchedButton = new ImageButton(requireContext(), null, 0, R.style.Button_Icon);
-            mUnwatchedButton.setImageResource(R.drawable.ic_unwatch);
-            mUnwatchedButton.setActivated(mAdapter.getFilters().isUnwatchedOnly());
-            mUnwatchedButton.setMaxHeight(size);
-            mUnwatchedButton.setAdjustViewBounds(true);
-            mUnwatchedButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    FilterOptions filters = mAdapter.getFilters();
-                    if (filters == null) filters = new FilterOptions();
-
-                    filters.setUnwatchedOnly(!filters.isUnwatchedOnly());
-                    mUnwatchedButton.setActivated(filters.isUnwatchedOnly());
-                    mAdapter.setFilters(filters);
-                    mAdapter.Retrieve();
-                    updateDisplayPrefs();
-                }
-            });
-            mUnwatchedButton.setContentDescription(getString(R.string.lbl_unwatched));
-            binding.toolBar.addView(mUnwatchedButton);
-        }
-
-        mFavoriteButton = new ImageButton(requireContext(), null, 0, R.style.Button_Icon);
-        mFavoriteButton.setImageResource(R.drawable.ic_heart);
-        mFavoriteButton.setActivated(mAdapter.getFilters().isFavoriteOnly());
-        mFavoriteButton.setMaxHeight(size);
-        mFavoriteButton.setAdjustViewBounds(true);
-        mFavoriteButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                FilterOptions filters = mAdapter.getFilters();
-                if (filters == null) filters = new FilterOptions();
-
-                filters.setFavoriteOnly(!filters.isFavoriteOnly());
-                mFavoriteButton.setActivated(filters.isFavoriteOnly());
-                mAdapter.setFilters(filters);
-                mAdapter.Retrieve();
-                updateDisplayPrefs();
-            }
-        });
-        mFavoriteButton.setContentDescription(getString(R.string.lbl_favorite));
-        binding.toolBar.addView(mFavoriteButton);
-
-        JumplistPopup jumplistPopup = new JumplistPopup();
-        mLetterButton = new ImageButton(requireContext(), null, 0, R.style.Button_Icon);
-        mLetterButton.setImageResource(R.drawable.ic_jump_letter);
-        mLetterButton.setMaxHeight(size);
-        mLetterButton.setAdjustViewBounds(true);
-        mLetterButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //Open letter jump popup
-                jumplistPopup.show();
-            }
-        });
-        mLetterButton.setContentDescription(getString(R.string.lbl_by_letter));
-        binding.toolBar.addView(mLetterButton);
-
-        if (mFolder.getDisplayPreferencesId() != null) {
-            MutableStateFlow<Boolean> settingsVisible = BrowseGridFragmentHelperKt.createSettingsVisibility(BrowseGridFragment.this);
-            mSettingsButton = new ImageButton(requireContext(), null, 0, R.style.Button_Icon);
-            mSettingsButton.setImageResource(R.drawable.ic_settings);
-            mSettingsButton.setMaxHeight(size);
-            mSettingsButton.setAdjustViewBounds(true);
-            mSettingsButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    settingsVisible.setValue(true);
-                }
-            });
-            mSettingsButton.setContentDescription(getString(R.string.lbl_settings));
-            binding.toolBar.addView(mSettingsButton);
-            BrowseGridFragmentHelperKt.addSettings(BrowseGridFragment.this, binding.settings, mFolder.getId(), mFolder.getDisplayPreferencesId(), settingsVisible);
-        }
+        jumplistPopup = new JumplistPopup();
+        // KFIN: tools live in the status bar, not in the page toolbar
+        BrowseGridTools.INSTANCE.show(this);
     }
 
     class JumplistPopup {
