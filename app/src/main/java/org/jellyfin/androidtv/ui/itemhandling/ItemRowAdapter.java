@@ -598,6 +598,9 @@ public class ItemRowAdapter extends MutableObjectAdapter<Object> {
         }
         notifyRetrieveStarted();
         lastFullRetrieve = Instant.now();
+        // KFIN: wipe current contents so a re-retrieve always rebuilds from scratch
+        // and can never accumulate duplicate items
+        clear();
         itemsLoaded = 0;
         switch (queryType) {
             case Items:
