@@ -298,15 +298,24 @@ private fun CardViewHolderContent(
 		}
 	}
 	val displayConfig = remember(item, imageType, uniformAspect) { item?.getDisplayConfig(imageType, uniformAspect) }
-	if (item == null || displayConfig == null) return
+
+	// KFIN: in the browse grid every card must occupy exactly the same cell size,
+	// otherwise leanback lays children out with overlaps and focus search jumps
+	// between cards. Never let the view collapse while a holder is being recycled.
+	val uniformSize = DpSize(staticHeight.dp * ImageHelper.ASPECT_RATIO_2_3.toFloat(), staticHeight.dp)
+	if (item == null || displayConfig == null) {
+		if (uniformAspect) Box(modifier = Modifier.size(uniformSize))
+		return
+	}
 
 	val image = displayConfig.image
 	val aspectRatio = displayConfig.aspectRatio.takeIf { it >= 0.1f }
 		?: image?.aspectRatio?.takeIf { it >= 0.1f } ?: 1f
 
-	val size = when (item.staticHeight) {
-		true -> DpSize(staticHeight.dp * aspectRatio, staticHeight.dp)
-		false if (aspectRatio > 1f) -> DpSize(130.dp * aspectRatio, 130.dp)
+	val size = when {
+		uniformAspect -> uniformSize
+		item.staticHeight -> DpSize(staticHeight.dp * aspectRatio, staticHeight.dp)
+		aspectRatio > 1f -> DpSize(130.dp * aspectRatio, 130.dp)
 		else -> DpSize(150.dp * aspectRatio, 150.dp)
 	}
 
