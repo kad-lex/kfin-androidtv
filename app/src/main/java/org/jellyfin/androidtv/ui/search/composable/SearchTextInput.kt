@@ -1,5 +1,6 @@
 package org.jellyfin.androidtv.ui.search.composable
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -16,6 +17,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
@@ -69,11 +73,29 @@ fun SearchTextInput(
 			textStyle = LocalTextStyle.current,
 			cursorBrush = SolidColor(color.first),
 			decorationBox = { innerTextField ->
+				// KFIN: capsule styling matching the status bar
 				Row(
 					verticalAlignment = Alignment.CenterVertically,
 					modifier = Modifier
-						.border(2.dp, color.first, RoundedCornerShape(percent = 30))
-						.padding(12.dp)
+						.clip(RoundedCornerShape(40.dp))
+						.background(Color(0xCC0B0D14))
+						.then(
+							if (focused) Modifier.border(
+								2.dp,
+								Color(0xFFF8FAFC).copy(alpha = 0.8f),
+								RoundedCornerShape(40.dp)
+							) else Modifier.border(
+								1.dp,
+								Brush.verticalGradient(
+									listOf(
+										Color.White.copy(alpha = 0.10f),
+										Color.White.copy(alpha = 0.05f)
+									)
+								),
+								RoundedCornerShape(40.dp)
+							)
+						)
+						.padding(horizontal = 16.dp, vertical = 12.dp)
 				) {
 					Icon(ImageVector.vectorResource(R.drawable.ic_search), contentDescription = null)
 					Spacer(Modifier.width(12.dp))

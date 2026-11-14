@@ -4,6 +4,7 @@ import static org.koin.java.KoinJavaComponent.inject;
 
 import android.os.Bundle;
 import android.os.Handler;
+import android.graphics.drawable.GradientDrawable;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -553,23 +554,23 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
             double usableCardSpace = mGridWidth / (1.0 + wastedSpacePct); // decrease size
             double cardWidth = usableCardSpace / numCols;
 
-            // fix any rounding errors and make pixel perfect
             // KFIN: shrink cards by 5% so a visible gap appears between them at every scale
             cardHeightInt = (int) Math.round(getCardHeightBy(cardWidth, mImageType, mFolder) * 0.95);
             int cardWidthInt = (int) getCardWidthBy(cardHeightInt, mImageType, mFolder);
 
-            // KFIN: distribute the freed space as equal gaps between cards and at the edges
+            // KFIN: grid spans edge to edge; all freed space goes into the gaps between cards
             int totalGapSpace = Math.max(mGridWidth - (cardWidthInt * numCols), 0);
-            int gap = totalGapSpace / (numCols + 1);
+            int gap = totalGapSpace / Math.max(numCols - 1, 1);
             spacingHorizontalInt = gap;
-            paddingLeftInt = gap;
+            paddingLeftInt = 0; // grid starts at the screen edge
 
             int sumSize = (cardWidthInt * numCols) + (spacingHorizontalInt * (numCols - 1)) + (paddingLeftInt * 2);
             if (Math.abs(sumSize - mGridWidth) > numCols + 2) {
                 Timber.w("setAutoCardGridValues calculation delta too large, something is off GridWidth <%s> sumSize <%s>!", mGridWidth, sumSize);
             }
             paddingTopInt = (int) Math.round((cardHeightInt * cardScaling) / 2.0);
-            spacingVerticalInt = Math.max((int) (Math.round(paddingTopInt * CARD_SPACING_PCT)), 0); // round spacing
+            // KFIN: vertical gap matches the horizontal gap between cards
+            spacingVerticalInt = spacingHorizontalInt;
             int cardsRow = (int) Math.round(((double) mGridHeight / (cardHeightInt + spacingVerticalInt)) + 0.5);
             mCardsScreenEst = numCols * cardsRow;
             mCardsScreenStride = numCols;
@@ -778,7 +779,8 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
 
     public void openSortMenu() {
         //Create sort menu
-        PopupMenu sortMenu = new PopupMenu(getActivity(), binding.toolBar, Gravity.END);
+        // KFIN: opens right below the status bar, capsule styling like the bar
+        PopupMenu sortMenu = new PopupMenu(getActivity(), binding.menuAnchor, Gravity.END, 0, R.style.PopupMenu_Kfin);
         for (Map.Entry<Integer, SortOption> entry : sortOptions.entrySet()) {
             MenuItem item = sortMenu.getMenu().add(0, entry.getKey(), entry.getKey(), entry.getValue().name);
             item.setChecked(entry.getValue().value.equals(libraryPreferences.get(LibraryPreferences.Companion.getSortBy())));
@@ -842,6 +844,12 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
 
         JumplistPopup() {
             PopupEmptyBinding layout = PopupEmptyBinding.inflate(getLayoutInflater(), binding.rowsFragment, false);
+            // KFIN: capsule look matching the status bar
+            GradientDrawable capsule = new GradientDrawable();
+            capsule.setShape(GradientDrawable.RECTANGLE);
+            capsule.setColor(0xCC0B0D14);
+            capsule.setCornerRadius(Utils.convertDpToPixel(requireContext(), 40));
+            layout.emptyPopup.setBackground(capsule);
             popupWindow = new PopupWindow(layout.emptyPopup, WIDTH, HEIGHT, true);
             popupWindow.setOutsideTouchable(true);
             popupWindow.setAnimationStyle(R.style.WindowAnimation_SlideTop);
@@ -858,7 +866,9 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
         }
 
         public void show() {
-            popupWindow.showAtLocation(binding.rowsFragment, Gravity.TOP, binding.rowsFragment.getLeft(), binding.rowsFragment.getTop());
+            // KFIN: letters bar sits right below the status bar
+            int y = Utils.convertDpToPixel(requireContext(), 76);
+            popupWindow.showAtLocation(binding.getRoot(), Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, y);
             if (mAdapter.getStartLetter() != null && !mAdapter.getStartLetter().isEmpty()) {
                 alphaPicker.focus(mAdapter.getStartLetter().charAt(0));
             }

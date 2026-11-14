@@ -15,6 +15,7 @@ import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.ui.navigation.NavigationAction
+import org.jellyfin.androidtv.ui.search.SearchFragment
 import org.jellyfin.androidtv.util.createBundle
 import timber.log.Timber
 import java.util.Stack
@@ -53,6 +54,7 @@ class DestinationFragmentView @JvmOverloads constructor(
 ) : FrameLayout(context, attrs) {
 	private companion object {
 		private const val FRAGMENT_TAG_CONTENT = "content"
+		private const val FRAGMENT_TAG_OVERLAY = "overlay"
 		private const val BUNDLE_SUPER = "super"
 		private const val BUNDLE_HISTORY = "history"
 	}
@@ -107,6 +109,17 @@ class DestinationFragmentView @JvmOverloads constructor(
 
 		// Make sure to remove the associated fragment
 		val currentFragment = currentEntry.fragment
+
+		// KFIN: search floats above the previous screen, which was never detached;
+		// just remove the overlay and leave the underlying screen as-is
+		if (currentFragment is SearchFragment
+			&& fragmentManager.findFragmentByTag(FRAGMENT_TAG_OVERLAY) != null
+		) {
+			if (currentFragment != null) transaction.remove(currentFragment)
+			commit(transaction)
+			return true
+		}
+
 		if (currentFragment != null) transaction.remove(currentFragment)
 
 		// Read & set previous entry
@@ -144,19 +157,37 @@ class DestinationFragmentView @JvmOverloads constructor(
 			fragment.arguments = entry.arguments
 		}
 
+		// KFIN: search floats above the calling screen (transparent background), so the
+		// underlying fragment stays attached instead of being detached
+		val asOverlay = fragment is SearchFragment
+			&& history.size > 1
+			&& fragmentManager.findFragmentByTag(FRAGMENT_TAG_OVERLAY) == null
+			&& !fragmentManager.isStateSaved
+
 		transaction.apply {
 			// Set options
 			setReorderingAllowed(true)
 			setCustomAnimations(R.anim.fade_in, R.anim.fade_out, R.anim.fade_in, R.anim.fade_out)
 
-			// Detach current fragment
-			fragmentManager.findFragmentByTag(FRAGMENT_TAG_CONTENT)?.let(::detach)
+			if (asOverlay) {
+				add(container.id, fragment, FRAGMENT_TAG_OVERLAY)
+			} else {
+				// Drop any floating overlay before showing a regular destination
+				fragmentManager.findFragmentByTag(FRAGMENT_TAG_OVERLAY)?.let(::remove)
 
-			// Attach or add next fragment
-			if (fragment.isDetached) attach(fragment)
-			else replace(container.id, fragment, FRAGMENT_TAG_CONTENT)
+				// Detach current fragment
+				fragmentManager.findFragmentByTag(FRAGMENT_TAG_CONTENT)?.let(::detach)
+
+				// Attach or add next fragment
+				if (fragment.isDetached) attach(fragment)
+				else replace(container.id, fragment, FRAGMENT_TAG_CONTENT)
+			}
 		}
 
+		commit(transaction)
+	}
+
+	private fun commit(transaction: FragmentTransaction) {
 		if (fragmentManager.isDestroyed) {
 			Timber.w("FragmentManager is already destroyed")
 		} else if (fragmentManager.isStateSaved) {

@@ -88,4 +88,8 @@
         <item name="android:popupBackground">@drawable/popup_menu_back</item>
         <item name="android:textColor">@color/indigo_dye</item>
     </style>
+
+    <style name="PopupMenu.Kfin" parent="android:Widget.Material.PopupMenu">
+        <item name="android:popupBackground">@drawable/kfin_popup_background</item>
+    </style>
 </resources>

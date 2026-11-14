@@ -111,6 +111,15 @@
         android:adjustViewBounds="true"
         android:scaleType="fitCenter" />
 
+    <View
+        android:id="@+id/menuAnchor"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="64dp"
+        android:layout_marginEnd="24dp" />
+
     <org.jellyfin.androidtv.ui.NowPlayingView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

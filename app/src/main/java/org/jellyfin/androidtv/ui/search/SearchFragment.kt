@@ -31,8 +31,6 @@ import androidx.leanback.app.RowsSupportFragment
 import androidx.lifecycle.Lifecycle
 import org.jellyfin.androidtv.ui.search.composable.SearchTextInput
 import org.jellyfin.androidtv.ui.search.composable.SearchVoiceInput
-import org.jellyfin.androidtv.ui.shared.toolbar.MainToolbar
-import org.jellyfin.androidtv.ui.shared.toolbar.MainToolbarActiveButton
 import org.jellyfin.androidtv.util.speech.rememberSpeechRecognizerAvailability
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
@@ -71,15 +69,14 @@ class SearchFragment : Fragment() {
 		}
 
 		Column {
-			MainToolbar(MainToolbarActiveButton.Search)
-
+			// KFIN: the global status bar provides navigation; no second toolbar here
 			Row(
 				horizontalArrangement = Arrangement.spacedBy(12.dp),
 				verticalAlignment = Alignment.CenterVertically,
 				modifier = Modifier
 					.focusRestorer()
 					.focusGroup()
-					.padding(horizontal = 48.dp)
+					.padding(start = 28.dp, end = 28.dp, top = 76.dp)
 			) {
 				if (speechRecognizerAvailability) {
 					SearchVoiceInput(
