@@ -603,7 +603,11 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
     public void onResume() {
         super.onResume();
 
-        PosterSize posterSizeSetting = libraryPreferences.get(LibraryPreferences.Companion.getPosterSize());
+        // Use the poster size captured in onCreate for the whole lifetime of this
+        // screen; re-reading it here picks up late server-side display-preference
+        // syncs, which rebuilds the grid with different card geometry mid-session
+        // and makes focus jump between columns while scrolling
+        PosterSize posterSizeSetting = mPosterSizeSetting;
         ImageType imageType = ImageType.POSTER;
         GridDirection gridDirection = GridDirection.VERTICAL;
 
