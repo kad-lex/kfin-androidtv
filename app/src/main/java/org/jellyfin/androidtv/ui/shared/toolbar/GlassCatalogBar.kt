@@ -118,34 +118,18 @@ private fun GlassCatalogTab(
 	var isFocused by remember { mutableStateOf(false) }
 	val isActive = selected || isFocused
 
-	// KFIN: selection is a double white contour - an outer ring larger than
-	// the button plus the inner ring on its edge, no fill
-	val density = LocalDensity.current
 	Box(
 		modifier = Modifier
 			.focusRequester(focusRequester)
-			.drawBehind {
-				if (isActive) {
-					val expand = with(density) { 4.dp.toPx() }
-					val stroke = with(density) { 3.dp.toPx() }
-					val radius = CornerRadius(with(density) { 44.dp.toPx() })
-					drawRoundRect(
-						color = Color.White,
-						topLeft = Offset(-expand, -expand),
-						size = Size(size.width + expand * 2, size.height + expand * 2),
-						cornerRadius = radius,
-						style = Stroke(width = stroke)
-					)
-				}
-			}
+			.clip(barShape)
 			.then(
 				if (isActive) Modifier.border(
-					2.dp,
-					Color.White,
+					1.dp + with(LocalDensity.current) { 1.toDp() },
+					Color(0xFFF8FAFC).copy(alpha = 0.7f),
 					barShape
 				) else Modifier
 			)
-			.clip(barShape)
+			.then(if (isActive) Modifier.background(Color.White.copy(alpha = 0.2f), barShape) else Modifier)
 			.onFocusChanged { focusState ->
 				isFocused = focusState.hasFocus
 				if (focusState.hasFocus) {
@@ -200,31 +184,17 @@ fun GlassIconButton(
 	val shape = RoundedCornerShape(40.dp)
 	var isFocused by remember { mutableStateOf(false) }
 
-	val density2 = LocalDensity.current
 	Box(
 		modifier = modifier
-			.drawBehind {
-				if (isFocused) {
-					val expand = with(density2) { 4.dp.toPx() }
-					val stroke = with(density2) { 3.dp.toPx() }
-					val radius = CornerRadius(with(density2) { 44.dp.toPx() })
-					drawRoundRect(
-						color = Color.White,
-						topLeft = Offset(-expand, -expand),
-						size = Size(size.width + expand * 2, size.height + expand * 2),
-						cornerRadius = radius,
-						style = Stroke(width = stroke)
-					)
-				}
-			}
+			.clip(shape)
 			.then(
 				if (isFocused) Modifier.border(
-					2.dp,
-					Color.White,
+					1.dp + with(LocalDensity.current) { 1.toDp() },
+					Color(0xFFF8FAFC).copy(alpha = 0.7f),
 					shape
 				) else Modifier
 			)
-			.clip(shape)
+			.then(if (isFocused) Modifier.background(Color.White.copy(alpha = 0.2f), shape) else Modifier)
 			.onFocusChanged { focusState ->
 				isFocused = focusState.hasFocus
 				if (focusState.hasFocus) HomeFocusCoordinator.setRowsFocused(false)
@@ -235,7 +205,7 @@ fun GlassIconButton(
 		Icon(
 			imageVector = icon,
 			contentDescription = contentDescription,
-			tint = if (activated && !isFocused) Color(0xFF00A4DC) else Color.White,
+			tint = if (activated) Color(0xFF00A4DC) else Color.White,
 			modifier = Modifier.size(18.dp)
 		)
 	}

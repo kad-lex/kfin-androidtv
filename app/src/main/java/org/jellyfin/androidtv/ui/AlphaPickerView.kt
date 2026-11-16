@@ -44,23 +44,10 @@ class AlphaPickerView @JvmOverloads constructor(
 				}
 				background = pill
 				setOnFocusChangeListener { _, hasFocus ->
-					// KFIN: focus is outline + 10% white fill, no glow
-					pill.setColor(if (hasFocus) 0xF2FFFFFF.toInt() else 0x00000000)
 					pill.setStroke(
 						if (hasFocus) strokeWidth else 0,
 						if (hasFocus) 0xB3F8FAFC.toInt() else 0x00000000
 					)
-					setTextColor(if (hasFocus) 0xF2000000.toInt() else android.graphics.Color.WHITE)
-					val lp = layoutParams as? android.widget.LinearLayout.LayoutParams
-					if (lp != null) {
-						val density = resources.displayMetrics.density
-						val grow = if (hasFocus) (3 * density).toInt() else 0
-						lp.leftMargin = grow
-						lp.rightMargin = grow
-						lp.topMargin = grow / 2
-						lp.bottomMargin = grow / 2
-						layoutParams = lp
-					}
 				}
 
 				setOnClickListener { _ ->

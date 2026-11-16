@@ -47,27 +47,6 @@ class TextUnderButton @JvmOverloads constructor(
 
 	private var hasLabel = false
 
-	// KFIN: white selection pill drawn larger than the button itself
-	private val selectionPaint = android.graphics.Paint().apply {
-		color = 0xF2FFFFFF.toInt()
-		isAntiAlias = true
-	}
-	private var selectionFraction = 0f
-
-	override fun dispatchDraw(canvas: android.graphics.Canvas) {
-		if (selectionFraction > 0f) {
-			selectionPaint.alpha = (selectionFraction * 255).toInt()
-			val expand = 6.dp(context).toFloat()
-			canvas.drawRoundRect(
-				-expand, -expand,
-				width + expand, height + expand,
-				40.dp(context).toFloat(), 40.dp(context).toFloat(),
-				selectionPaint
-			)
-		}
-		super.dispatchDraw(canvas)
-	}
-
 	init {
 		isFocusable = true
 		isFocusableInTouchMode = true
@@ -99,9 +78,7 @@ class TextUnderButton @JvmOverloads constructor(
 			duration = 180
 			addUpdateListener {
 				focusFraction = it.animatedValue as Float
-				selectionFraction = focusFraction
 				applyFocusColors()
-				invalidate()
 			}
 			start()
 		}
@@ -109,12 +86,8 @@ class TextUnderButton @JvmOverloads constructor(
 
 	private fun applyFocusColors() {
 		val f = focusFraction
-		// KFIN: matte glass - white pill with dark content; focused turns dark
 		glassDrawable.setColor(lerpColor(GLASS_COLOR, FOCUSED_FILL_COLOR, f))
 		glassDrawable.setStroke(1.dp(context), lerpColor(NORMAL_STROKE_COLOR, FOCUSED_STROKE_COLOR, f))
-		val contentColor = lerpColor(CONTENT_DARK_COLOR, CONTENT_LIGHT_COLOR, f)
-		binding.label.setTextColor(contentColor)
-		binding.imageButton.setColorFilter(contentColor)
 		binding.pill.invalidate()
 	}
 

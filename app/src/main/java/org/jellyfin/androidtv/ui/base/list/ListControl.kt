@@ -69,30 +69,10 @@ fun ListControl(
 			.fillMaxWidth()
 			.clip(controlShape)
 			.then(
-				// KFIN: selection - white pill larger than the item (drawn behind)
+				// KFIN: status-bar focus style - white border + 20% white fill, no glow
 				if (active && colors.focusedContainerColor == Color.Transparent) Modifier
-					.drawBehind {
-						val fillExpand = 2.dp.toPx()
-						val ringExpand = 5.5.dp.toPx()
-						val ringStroke = 2.5.dp.toPx()
-						val radius = CornerRadius(18.dp.toPx())
-						val ringRadius = CornerRadius(22.dp.toPx())
-						// KFIN: white pill, then a separate outer ring with a dark gap
-						drawRoundRect(
-							color = Color(0xF2FFFFFF),
-							topLeft = Offset(-fillExpand, -fillExpand),
-							size = Size(size.width + fillExpand * 2, size.height + fillExpand * 2),
-							cornerRadius = radius
-						)
-						drawRoundRect(
-							color = Color.White,
-							topLeft = Offset(-ringExpand, -ringExpand),
-							size = Size(size.width + ringExpand * 2, size.height + ringExpand * 2),
-							cornerRadius = ringRadius,
-							style = Stroke(width = ringStroke)
-						)
-					}
-					.border(1.dp, Color.White.copy(alpha = 0.9f), controlShape)
+					.border(1.dp, Color(0xFFF8FAFC).copy(alpha = 0.7f), controlShape)
+					.background(Color.White.copy(alpha = 0.2f), controlShape)
 				else Modifier
 			)
 			.background(backgroundColor, controlShape)
@@ -105,9 +85,8 @@ fun ListControl(
 			leadingContent = leadingContent,
 			trailingContent = trailingContent,
 			footerContent = footerContent,
-			// KFIN: dark heading on the white selection
 			headingStyle = JellyfinTheme.typography.listHeadline
-				.copy(color = if (active) Color(0xF2000000) else JellyfinTheme.colorScheme.listHeadline),
+				.copy(color = JellyfinTheme.colorScheme.listHeadline),
 		)
 	}
 }

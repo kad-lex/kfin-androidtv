@@ -42,7 +42,7 @@ fun ItemCard(
 	// KFIN: accent color extracted from the poster's lower half - tints the border
 	accentColor: Color? = null,
 ) {
-	val focusBorderWidth = with(LocalDensity.current) { 3.toDp() }
+	val focusBorderWidth = with(LocalDensity.current) { 7.toDp() }
 	// KFIN: the focus highlight fades between objects instead of jumping
 	val focusAlpha by animateFloatAsState(
 		targetValue = if (focused) 1f else 0f,

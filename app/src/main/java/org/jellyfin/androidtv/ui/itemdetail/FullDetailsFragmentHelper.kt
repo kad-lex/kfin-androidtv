@@ -317,19 +317,7 @@ fun FullDetailsFragment.chooseExternalPlayer() {
 			}
 			background = itemBg
 			setOnFocusChangeListener { _, hasFocus ->
-				// KFIN: selection - white pill slightly larger than the item
-				itemBg.setColor(if (hasFocus) 0xF2FFFFFF.toInt() else 0x00000000)
 				itemBg.setStroke(if (hasFocus) dp(1) else 0, if (hasFocus) 0xB3F8FAFC.toInt() else 0x00000000)
-				setTextColor(if (hasFocus) 0xF2000000.toInt() else android.graphics.Color.WHITE)
-				val lp = layoutParams as? android.widget.LinearLayout.LayoutParams
-				if (lp != null) {
-					val grow = if (hasFocus) dp(3) else 0
-					lp.leftMargin = grow
-					lp.rightMargin = grow
-					lp.topMargin = grow / 2
-					lp.bottomMargin = grow / 2
-					layoutParams = lp
-				}
 			}
 			setOnClickListener {
 				externalAppRepository.setExternalPlayerapp(resolveInfo.activityInfo)

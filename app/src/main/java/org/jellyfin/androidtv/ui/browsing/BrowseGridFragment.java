@@ -213,7 +213,7 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
             org.jellyfin.androidtv.ui.shared.EdgeFadeFrameLayout fade =
                     (org.jellyfin.androidtv.ui.shared.EdgeFadeFrameLayout) binding.rowsFragment;
             fade.setBottomFadeEnabled(false);
-            fade.setTopFade(Utils.convertDpToPixel(requireContext(), 10) - 23f);
+            fade.setTopFade(Utils.convertDpToPixel(requireContext(), 10) - 18f);
         }
 
         binding.getRoot().getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
@@ -874,19 +874,8 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
                 itemBg.setCornerRadius(pillRadius);
                 itemBg.setStroke(0, 0x00000000);
                 item.setBackground(itemBg);
-                item.setOnFocusChangeListener((v, hasFocus) -> {
-                    // KFIN: selection - white pill slightly larger than the item
-                    itemBg.setColor(hasFocus ? 0xF2FFFFFF : 0x00000000);
-                    itemBg.setStroke(hasFocus ? focusedStroke : 0, hasFocus ? 0xB3F8FAFC : 0x00000000);
-                    item.setTextColor(hasFocus ? 0xF2000000 : Color.WHITE);
-                    LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) item.getLayoutParams();
-                    int grow = hasFocus ? Utils.convertDpToPixel(requireContext(), 3) : 0;
-                    lp.leftMargin = grow;
-                    lp.rightMargin = grow;
-                    lp.topMargin = grow / 2;
-                    lp.bottomMargin = grow / 2;
-                    item.setLayoutParams(lp);
-                });
+                item.setOnFocusChangeListener((v, hasFocus) ->
+                        itemBg.setStroke(hasFocus ? focusedStroke : 0, hasFocus ? 0xB3F8FAFC : 0x00000000));
 
                 item.setOnClickListener(v -> {
                     mAdapter.setSortBy(option);

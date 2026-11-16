@@ -298,16 +298,6 @@ private fun CarouselForeground(
 		}
 
 		val watchNowShape = RoundedCornerShape(40.dp)
-		// KFIN: the watch button border uses the same accent as the cards -
-		// extracted from the carousel backdrop's lower half
-		val context = LocalContext.current
-		var watchAccent by remember(item.imageUrl) { mutableStateOf<Color?>(null) }
-		androidx.compose.runtime.LaunchedEffect(item.imageUrl) {
-			watchAccent = org.jellyfin.androidtv.ui.shared.extractAccentColorFromUrl(
-				context, item.imageUrl
-			)
-		}
-		val watchBorderColor = watchAccent ?: Color(0xFFF8FAFC)
 		Box(
 			modifier = Modifier
 				.align(Alignment.BottomStart)
@@ -317,21 +307,13 @@ private fun CarouselForeground(
 				)
 				.focusRequester(focusRequester)
 				.clip(watchNowShape)
-				// KFIN: dark matte glass; selection is drawn larger below
 				.background(Color(0xCC0B0D14))
-				.drawBehind {
-					if (watchNowFocused) {
-						val expand = 5.dp.toPx()
-						drawRoundRect(
-							color = Color(0xF2FFFFFF),
-							topLeft = Offset(-expand, -expand),
-							size = Size(size.width + expand * 2, size.height + expand * 2),
-							cornerRadius = CornerRadius(40.dp.toPx())
-						)
-					}
-				}
 				.then(
-					if (!watchNowFocused) Modifier.border(
+					if (watchNowFocused) Modifier.border(
+						1.dp + with(LocalDensity.current) { 1.toDp() },
+						Color(0xFFF8FAFC).copy(alpha = 0.7f),
+						watchNowShape
+					) else Modifier.border(
 						1.dp,
 						Brush.verticalGradient(
 							listOf(
@@ -340,7 +322,7 @@ private fun CarouselForeground(
 							)
 						),
 						watchNowShape
-					) else Modifier
+					)
 				)
 				
 				.onFocusChanged { focusState -> onWatchNowFocusChanged(focusState.hasFocus) }
@@ -389,7 +371,7 @@ private fun CarouselForeground(
 				Text(
 					// KFIN: uppercase like the rest of the UI labels
 					text = stringResource(R.string.watch).uppercase(),
-					color = if (watchNowFocused) Color(0xF2000000) else Color.White,
+					color = Color.White,
 					fontSize = 14.sp,
 					fontWeight = FontWeight.SemiBold
 				)
