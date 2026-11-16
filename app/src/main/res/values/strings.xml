@@ -40,6 +40,8 @@
     <string name="lbl_play_all">Play all</string>
     <string name="lbl_shuffle_all">Shuffle all</string>
     <string name="lbl_play">Play</string>
+    <string name="lbl_external_player">Play in external player</string>
+    <string name="lbl_choose_external_player">Choose external player</string>
     <string name="lbl_pause">Pause</string>
     <string name="lbl_exit">Exit</string>
     <string name="lbl_cancel">Cancel</string>
@@ -56,6 +58,7 @@
     <string name="lbl_chapters">Chapters</string>
     <string name="lbl_specials">Specials</string>
     <string name="lbl_trailers">Trailers</string>
+    <string name="lbl_restart">Restart</string>
     <string name="lbl_items">Items</string>
     <string name="lbl_item">Item</string>
     <string name="lbl_series">Series</string>

@@ -24,6 +24,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,7 +60,6 @@ import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
 import org.jellyfin.androidtv.ui.playback.MediaManager
 import org.jellyfin.androidtv.ui.settings.compat.SettingsViewModel
-import org.jellyfin.androidtv.ui.shared.innerGlow
 import org.jellyfin.androidtv.util.apiclient.getUrl
 import org.jellyfin.androidtv.util.apiclient.primaryImage
 import org.jellyfin.sdk.api.client.ApiClient
@@ -69,7 +73,7 @@ fun GlassCatalogBar(
 	content: @Composable RowScope.() -> Unit,
 ) {
 	val barShape = RoundedCornerShape(40.dp)
-	val sizeIncrease = with(LocalDensity.current) { 4.toDp() }
+	val sizeIncrease = with(LocalDensity.current) { 6.toDp() }
 	val halfSizeIncrease = with(LocalDensity.current) { 2.toDp() }
 
 	Row(
@@ -77,7 +81,7 @@ fun GlassCatalogBar(
 			.widthIn(max = 1240.dp + sizeIncrease)
 			.horizontalScroll(rememberScrollState())
 			.clip(barShape)
-			.background(Color(0xCC0B0D14))
+			.background(Color(0xA30B0D14))
 			.border(
 				width = 1.dp,
 				brush = Brush.verticalGradient(
@@ -105,6 +109,8 @@ private fun GlassCatalogTab(
 	icon: ImageVector,
 	selected: Boolean,
 	enabled: Boolean = true,
+	focusRequester: FocusRequester = FocusRequester(),
+	onFocus: () -> Unit = {},
 	onClick: () -> Unit,
 ) {
 	val barShape = RoundedCornerShape(40.dp)
@@ -112,29 +118,50 @@ private fun GlassCatalogTab(
 	var isFocused by remember { mutableStateOf(false) }
 	val isActive = selected || isFocused
 
+	// KFIN: selection is a double white contour - an outer ring larger than
+	// the button plus the inner ring on its edge, no fill
+	val density = LocalDensity.current
 	Box(
 		modifier = Modifier
-			.clip(barShape)
+			.focusRequester(focusRequester)
+			.drawBehind {
+				if (isActive) {
+					val expand = with(density) { 4.dp.toPx() }
+					val stroke = with(density) { 3.dp.toPx() }
+					val radius = CornerRadius(with(density) { 44.dp.toPx() })
+					drawRoundRect(
+						color = Color.White,
+						topLeft = Offset(-expand, -expand),
+						size = Size(size.width + expand * 2, size.height + expand * 2),
+						cornerRadius = radius,
+						style = Stroke(width = stroke)
+					)
+				}
+			}
 			.then(
 				if (isActive) Modifier.border(
-					2.dp + with(LocalDensity.current) { 1.toDp() },
-					Color(0xFFF8FAFC).copy(alpha = 0.8f),
+					2.dp,
+					Color.White,
 					barShape
 				) else Modifier
 			)
-			.innerGlow(cornerRadius = 40.dp, enabled = isActive)
+			.clip(barShape)
 			.onFocusChanged { focusState ->
 				isFocused = focusState.hasFocus
-				if (focusState.hasFocus) HomeFocusCoordinator.setRowsFocused(false)
+				if (focusState.hasFocus) {
+					HomeFocusCoordinator.setRowsFocused(false)
+					onFocus()
+				}
 			}
 			.clickable(enabled = enabled, onClick = onClick)
 			.padding(horizontal = 8.dp, vertical = 6.dp)
 	) {
+		val contentColor = Color.White.copy(alpha = contentAlpha)
 		if (title == null) {
 			Icon(
 				imageVector = icon,
 				contentDescription = null,
-				tint = Color.White.copy(alpha = contentAlpha),
+				tint = contentColor,
 				modifier = Modifier.size(18.dp)
 			)
 		} else {
@@ -145,12 +172,13 @@ private fun GlassCatalogTab(
 				Icon(
 					imageVector = icon,
 					contentDescription = null,
-					tint = Color.White.copy(alpha = contentAlpha),
+					tint = contentColor,
 					modifier = Modifier.size(16.dp)
 				)
 				Text(
-					text = title,
-					color = Color.White.copy(alpha = contentAlpha),
+					// KFIN: status bar labels are uppercase
+					text = title.uppercase(),
+					color = contentColor,
 					fontSize = 13.sp,
 					fontWeight = FontWeight.Bold,
 					maxLines = 1,
@@ -165,23 +193,38 @@ private fun GlassCatalogTab(
 fun GlassIconButton(
 	icon: ImageVector,
 	contentDescription: String,
+	modifier: Modifier = Modifier,
 	activated: Boolean = false,
 	onClick: () -> Unit,
 ) {
 	val shape = RoundedCornerShape(40.dp)
 	var isFocused by remember { mutableStateOf(false) }
 
+	val density2 = LocalDensity.current
 	Box(
-		modifier = Modifier
-			.clip(shape)
+		modifier = modifier
+			.drawBehind {
+				if (isFocused) {
+					val expand = with(density2) { 4.dp.toPx() }
+					val stroke = with(density2) { 3.dp.toPx() }
+					val radius = CornerRadius(with(density2) { 44.dp.toPx() })
+					drawRoundRect(
+						color = Color.White,
+						topLeft = Offset(-expand, -expand),
+						size = Size(size.width + expand * 2, size.height + expand * 2),
+						cornerRadius = radius,
+						style = Stroke(width = stroke)
+					)
+				}
+			}
 			.then(
 				if (isFocused) Modifier.border(
-					2.dp + with(LocalDensity.current) { 1.toDp() },
-					Color(0xFFF8FAFC).copy(alpha = 0.8f),
+					2.dp,
+					Color.White,
 					shape
 				) else Modifier
 			)
-			.innerGlow(cornerRadius = 40.dp, enabled = isFocused)
+			.clip(shape)
 			.onFocusChanged { focusState ->
 				isFocused = focusState.hasFocus
 				if (focusState.hasFocus) HomeFocusCoordinator.setRowsFocused(false)
@@ -192,7 +235,7 @@ fun GlassIconButton(
 		Icon(
 			imageVector = icon,
 			contentDescription = contentDescription,
-			tint = if (activated) Color(0xFF00A4DC) else Color.White,
+			tint = if (activated && !isFocused) Color(0xFF00A4DC) else Color.White,
 			modifier = Modifier.size(18.dp)
 		)
 	}
@@ -230,6 +273,19 @@ fun HomeStatusBar() {
 		if (library != null) itemLauncher.launchUserView(library)
 	}
 
+	// KFIN: rising onto the status bar always lands on the home button
+	val homeFocusRequester = remember { FocusRequester() }
+
+	DisposableEffect(Unit) {
+		CatalogBarFocus.setActions(
+			focusSaved = { homeFocusRequester.requestFocus() },
+			focusHome = { homeFocusRequester.requestFocus() }
+		)
+		onDispose {
+			CatalogBarFocus.setActions(null, null)
+		}
+	}
+
 	GlassCatalogBar {
 		Box(
 			modifier = Modifier
@@ -238,12 +294,13 @@ fun HomeStatusBar() {
 				.clip(RoundedCornerShape(40.dp))
 				.then(
 					if (isProfileFocused) Modifier.border(
-						2.dp + with(LocalDensity.current) { 1.toDp() },
-						Color(0xFFF8FAFC).copy(alpha = 0.8f),
+						1.dp + with(LocalDensity.current) { 1.toDp() },
+						Color(0xFFF8FAFC).copy(alpha = 0.7f),
 						RoundedCornerShape(40.dp)
 					) else Modifier
 				)
-				.innerGlow(cornerRadius = 40.dp, enabled = isProfileFocused)
+				// KFIN: focus is outline + 10% white fill, no glow
+				.then(if (isProfileFocused) Modifier.background(Color(0xF20B0D14), RoundedCornerShape(40.dp)) else Modifier)
 				.onFocusChanged { focusState ->
 					isProfileFocused = focusState.hasFocus
 					if (focusState.hasFocus) HomeFocusCoordinator.setRowsFocused(false)
@@ -269,6 +326,7 @@ fun HomeStatusBar() {
 			title = null,
 			icon = ImageVector.vectorResource(R.drawable.ic_house),
 			selected = false,
+			focusRequester = homeFocusRequester,
 			onClick = { navigationRepository.navigate(Destinations.home, replace = true) }
 		)
 		GlassCatalogTab(

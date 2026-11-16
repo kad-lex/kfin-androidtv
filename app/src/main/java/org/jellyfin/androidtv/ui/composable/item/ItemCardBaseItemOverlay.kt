@@ -16,14 +16,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.preference.UserPreferences
 import org.jellyfin.androidtv.preference.constant.WatchedIndicatorBehavior
 import org.jellyfin.androidtv.ui.base.Badge
 import org.jellyfin.androidtv.ui.base.Icon
+import org.jellyfin.androidtv.ui.base.JellyfinTheme
 import org.jellyfin.androidtv.ui.base.Seekbar
+import org.jellyfin.androidtv.ui.base.SeekbarDefaults
 import org.jellyfin.androidtv.ui.base.Text
 import org.jellyfin.androidtv.ui.composable.rememberPlayerProgress
 import org.jellyfin.androidtv.ui.composable.rememberQueueEntry
@@ -119,21 +123,35 @@ private fun WatchIndicator(
 
 	if (isPlayed) {
 		Badge(
-			modifier = modifier
-				.size(24.dp),
-		) {
-			Icon(
-				imageVector = ImageVector.vectorResource(R.drawable.ic_watch),
-				contentDescription = null,
-				modifier = Modifier.size(12.dp)
-			)
-		}
+			// KFIN: status-bar style glass capsule
+			modifier = modifier,
+			minSize = 18.dp,
+			contentPadding = 2.dp,
+			containerColor = Color(0xCC0B0D14),
+			contentColor = Color.White,
+			borderWidth = 1.dp,
+			borderColor = Color(0x1AFFFFFF),
+			content = {
+				Icon(
+					imageVector = ImageVector.vectorResource(R.drawable.ic_watch),
+					contentDescription = null,
+					modifier = Modifier.size(9.dp)
+				)
+			}
+		)
 	} else if (unplayedItems != null) {
 		if (watchedIndicatorBehavior == WatchedIndicatorBehavior.HIDE_UNWATCHED) return
 
 		Badge(
-			modifier = modifier
-				.sizeIn(minWidth = 24.dp, minHeight = 24.dp),
+			// KFIN: status-bar style glass capsule
+			modifier = modifier,
+			minSize = 18.dp,
+			contentPadding = 2.dp,
+			containerColor = Color(0xCC0B0D14),
+			contentColor = Color.White,
+			borderWidth = 1.dp,
+			borderColor = Color(0x1AFFFFFF),
+			textStyle = JellyfinTheme.typography.badge.copy(fontSize = 10.sp),
 		) {
 			Text(
 				text = unplayedItems.toString(),
@@ -157,6 +175,8 @@ private fun ProgressIndicator(
 			Seekbar(
 				progress = playedPercentage,
 				enabled = false,
+				// KFIN: YouTube-red progress
+				colors = SeekbarDefaults.colors(progressColor = Color(0xFFFF0033)),
 				modifier = Modifier
 					.fillMaxWidth()
 					.height(3.dp)

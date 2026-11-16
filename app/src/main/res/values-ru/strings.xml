@@ -31,6 +31,8 @@
     <string name="lbl_play_all">Воспроизвести все</string>
     <string name="lbl_shuffle_all">Перемешать все</string>
     <string name="lbl_play">Воспроизвести</string>
+    <string name="lbl_external_player">Внешний плеер</string>
+    <string name="lbl_choose_external_player">Выбор внешнего плеера</string>
     <string name="lbl_cancel">Отменить</string>
     <string name="lbl_cancel_recording">Отменить запись</string>
     <string name="lbl_cancel_series">Отменить сериал</string>
@@ -44,6 +46,7 @@
     <string name="lbl_chapters">Разделы</string>
     <string name="lbl_specials">Доп. материалы</string>
     <string name="lbl_trailers">Трейлеры</string>
+    <string name="lbl_restart">Заново</string>
     <string name="lbl_items">Элементы</string>
     <string name="lbl_item">Элемент</string>
     <string name="lbl_seasons">Сезоны</string>

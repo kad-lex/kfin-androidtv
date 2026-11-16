@@ -7,7 +7,8 @@ import androidx.compose.ui.graphics.Color
  */
 object InfoRowColors {
 	val Transparent = Color.Transparent to Color.White
-	val Default = Color(0xB3FFFFFF) to Color.Black
-	val Green = Color(0xB3089562) to Color.White
-	val Red = Color(0xB3F2364D) to Color.White
+	// KFIN: status-bar glass capsule
+	val Default = Color(0xCC0B0D14) to Color.White
+	val Green = Color(0xCC0B0D14) to Color(0xFF3DDC84)
+	val Red = Color(0xCC0B0D14) to Color(0xFFF2364D)
 }

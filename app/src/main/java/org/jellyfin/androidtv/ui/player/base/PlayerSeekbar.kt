@@ -5,6 +5,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import org.jellyfin.androidtv.ui.base.Seekbar
 import org.jellyfin.androidtv.ui.base.SeekbarColors
 import org.jellyfin.androidtv.ui.base.SeekbarDefaults
@@ -18,7 +19,10 @@ import kotlin.time.times
 @Composable
 fun PlayerSeekbar(
 	modifier: Modifier = Modifier,
-	colors: SeekbarColors = SeekbarDefaults.colors(),
+	colors: SeekbarColors = SeekbarDefaults.colors(
+		// KFIN: YouTube-red progress
+		progressColor = Color(0xFFFF0033)
+	),
 	playbackManager: PlaybackManager = koinInject<PlaybackManager>(),
 ) {
 	val playState by playbackManager.state.playState.collectAsState()

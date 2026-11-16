@@ -7,3 +7,6 @@ local.properties
 .kotlin/
 build/
 captures/
+
+# Local APK archive for rollback
+releases/

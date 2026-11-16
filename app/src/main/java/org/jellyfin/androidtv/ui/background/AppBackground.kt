@@ -14,9 +14,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -33,9 +36,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.data.service.BackgroundService
-import org.jellyfin.androidtv.util.coil.blurImageBitmap
+import org.jellyfin.androidtv.ui.shared.extractAccentColor
 import org.koin.compose.koinInject
 
 @Composable
@@ -100,8 +105,11 @@ private const val BACKDROP_BLUR_FADE = 0.08f
 private fun BackdropWithBlurBoundary(bitmap: ImageBitmap) {
 	val context = LocalContext.current
 	val tint = ColorFilter.tint(colorResource(R.color.background_filter), BlendMode.SrcAtop)
-	val preBlurred = remember(bitmap, context) {
-		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) blurImageBitmap(context, bitmap) else null
+	// KFIN: accent color of the lower half, extracted off the main thread -
+	// it replaces the blur below the boundary
+	var accent by remember(bitmap, context) { mutableStateOf<Color?>(null) }
+	LaunchedEffect(bitmap, context) {
+		accent = withContext(Dispatchers.Default) { extractAccentColor(bitmap) }
 	}
 
 	BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -118,48 +126,26 @@ private fun BackdropWithBlurBoundary(bitmap: ImageBitmap) {
 			modifier = Modifier.fillMaxSize()
 		)
 
-		// Blurred backdrop, masked to the region below the boundary
+		// Accent fill, masked to the region below the boundary
 		Box(
 			modifier = Modifier
 				.fillMaxSize()
 				.graphicsLayer { alpha = 0.99f }
 		) {
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-				Image(
-					bitmap = bitmap,
-					contentDescription = null,
-					alignment = Alignment.Center,
-					contentScale = ContentScale.Crop,
-					colorFilter = tint,
-					modifier = Modifier
-						.fillMaxSize()
-						.blur(21.dp)
-				)
-			} else if (preBlurred != null) {
-				Image(
-					bitmap = preBlurred,
-					contentDescription = null,
-					alignment = Alignment.Center,
-					contentScale = ContentScale.Crop,
-					colorFilter = tint,
-					modifier = Modifier.fillMaxSize()
-				)
-			}
-
+			// KFIN: 80% accent fill instead of blur, gradually turning black
+			// towards the bottom edge
+			val accentFill = accent ?: Color(0xFF0B0D14)
 			Box(
 				modifier = Modifier
 					.fillMaxSize()
-					.drawBehind {
-						drawRect(
-							brush = Brush.verticalGradient(
-								0f to Color.Transparent,
-								boundary to Color.Transparent,
-								fadeEnd to Color.Black,
-								1f to Color.Black
-							),
-							blendMode = BlendMode.DstIn
+					.background(
+						Brush.verticalGradient(
+							0f to accentFill.copy(alpha = 0f),
+							boundary to accentFill.copy(alpha = 0.7f),
+							fadeEnd to accentFill.copy(alpha = 0.7f),
+							1f to androidx.compose.ui.graphics.lerp(accentFill.copy(alpha = 0.7f), Color.Black, 0.85f)
 						)
-					}
+					)
 			)
 		}
 

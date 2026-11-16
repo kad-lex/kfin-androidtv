@@ -29,6 +29,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -68,9 +71,11 @@ import org.jellyfin.androidtv.ui.base.Icon
 import org.jellyfin.androidtv.ui.base.Text
 import org.jellyfin.androidtv.ui.composable.AsyncImage
 import org.jellyfin.androidtv.ui.home.HomeFocusCoordinator
+import org.jellyfin.androidtv.ui.shared.toolbar.CatalogBarFocus
 import org.jellyfin.androidtv.ui.navigation.Destinations
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
 import org.jellyfin.androidtv.ui.shared.innerGlow
+import org.jellyfin.androidtv.ui.shared.extractAccentColorFromUrl
 import org.jellyfin.androidtv.ui.shared.whiteGlow
 import org.jellyfin.androidtv.util.coil.BackgroundBlurTransformation
 import org.jellyfin.sdk.api.client.ApiClient
@@ -176,7 +181,7 @@ private suspend fun loadFeaturedItems(api: ApiClient): List<FeaturedCarouselItem
 			filters = setOf(ItemFilter.IS_UNPLAYED),
 			sortBy = setOf(ItemSortBy.PREMIERE_DATE, ItemSortBy.SORT_NAME),
 			sortOrder = setOf(SortOrder.DESCENDING),
-			limit = 10,
+			limit = 20,
 			recursive = true,
 			enableImageTypes = setOf(
 				org.jellyfin.sdk.model.api.ImageType.BACKDROP,
@@ -205,7 +210,8 @@ private fun CarouselSlide(
 	BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
 		val density = LocalDensity.current
 		val boundaryFraction = with(density) { blurBoundary.toPx() / maxHeight.toPx() }.coerceIn(0f, 1f)
-		val fadeFraction = with(density) { 100.toDp().toPx() / maxHeight.toPx() }
+		// KFIN: fade band twice as wide as before
+		val fadeFraction = with(density) { 200.toDp().toPx() / maxHeight.toPx() }
 
 		AsyncImage(
 			url = item.imageUrl,
@@ -213,53 +219,28 @@ private fun CarouselSlide(
 			modifier = Modifier.fillMaxSize()
 		)
 
+		// KFIN: accent fill instead of blur - opacity goes from 100% at the
+		// bottom edge to 80% at the boundary, over the widened fade band
+		val context = LocalContext.current
+		var accent by remember(item.imageUrl) { mutableStateOf<Color?>(null) }
+		LaunchedEffect(item.imageUrl) {
+			accent = extractAccentColorFromUrl(context, item.imageUrl)
+		}
+		val accentFill = accent ?: Color(0xCC0B0D14)
 		Box(
 			modifier = Modifier
 				.fillMaxSize()
-				.graphicsLayer { alpha = 0.99f }
-		) {
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-				AsyncImage(
-					url = item.imageUrl,
-					scaleType = ImageView.ScaleType.CENTER_CROP,
-					modifier = Modifier
-						.fillMaxSize()
-						.blur(21.dp)
+				.background(
+					Brush.verticalGradient(
+						0f to accentFill.copy(alpha = 0f),
+						boundaryFraction to accentFill.copy(alpha = 0.7f),
+						(boundaryFraction + fadeFraction).coerceAtMost(1f) to accentFill.copy(alpha = 1f),
+						// KFIN: the accent gradually turns black towards the bottom edge
+						0.85f to androidx.compose.ui.graphics.lerp(accentFill, Color.Black, 0.4f),
+						1f to androidx.compose.ui.graphics.lerp(accentFill, Color.Black, 0.8f)
+					)
 				)
-			} else {
-				val context = LocalContext.current
-				val blurredPainter = rememberAsyncImagePainter(
-					model = ImageRequest.Builder(context)
-						.data(item.imageUrl)
-						.transformations(BackgroundBlurTransformation(context))
-						.build(),
-					contentScale = ContentScale.Crop,
-				)
-
-				Image(
-					painter = blurredPainter,
-					contentDescription = null,
-					contentScale = ContentScale.Crop,
-					modifier = Modifier.fillMaxSize()
-				)
-			}
-
-			Box(
-				modifier = Modifier
-					.fillMaxSize()
-					.drawBehind {
-						drawRect(
-							brush = Brush.verticalGradient(
-								0f to Color.Transparent,
-								boundaryFraction to Color.Transparent,
-								(boundaryFraction + fadeFraction).coerceAtMost(1f) to Color.Black,
-								1f to Color.Black
-							),
-							blendMode = BlendMode.DstIn
-						)
-					}
-			)
-		}
+		)
 
 		Box(
 			modifier = Modifier
@@ -317,6 +298,16 @@ private fun CarouselForeground(
 		}
 
 		val watchNowShape = RoundedCornerShape(40.dp)
+		// KFIN: the watch button border uses the same accent as the cards -
+		// extracted from the carousel backdrop's lower half
+		val context = LocalContext.current
+		var watchAccent by remember(item.imageUrl) { mutableStateOf<Color?>(null) }
+		androidx.compose.runtime.LaunchedEffect(item.imageUrl) {
+			watchAccent = org.jellyfin.androidtv.ui.shared.extractAccentColorFromUrl(
+				context, item.imageUrl
+			)
+		}
+		val watchBorderColor = watchAccent ?: Color(0xFFF8FAFC)
 		Box(
 			modifier = Modifier
 				.align(Alignment.BottomStart)
@@ -325,15 +316,22 @@ private fun CarouselForeground(
 					bottom = with(LocalDensity.current) { 11.toDp() }
 				)
 				.focusRequester(focusRequester)
-				.whiteGlow(cornerRadius = 40.dp, radius = 2.5.dp, alpha = 0.3f, enabled = watchNowFocused)
 				.clip(watchNowShape)
+				// KFIN: dark matte glass; selection is drawn larger below
 				.background(Color(0xCC0B0D14))
+				.drawBehind {
+					if (watchNowFocused) {
+						val expand = 5.dp.toPx()
+						drawRoundRect(
+							color = Color(0xF2FFFFFF),
+							topLeft = Offset(-expand, -expand),
+							size = Size(size.width + expand * 2, size.height + expand * 2),
+							cornerRadius = CornerRadius(40.dp.toPx())
+						)
+					}
+				}
 				.then(
-					if (watchNowFocused) Modifier.border(
-						2.dp + with(LocalDensity.current) { 1.toDp() },
-						Color(0xFFF8FAFC).copy(alpha = 0.8f),
-						watchNowShape
-					) else Modifier.border(
+					if (!watchNowFocused) Modifier.border(
 						1.dp,
 						Brush.verticalGradient(
 							listOf(
@@ -342,9 +340,9 @@ private fun CarouselForeground(
 							)
 						),
 						watchNowShape
-					)
+					) else Modifier
 				)
-				.innerGlow(cornerRadius = 40.dp, enabled = watchNowFocused)
+				
 				.onFocusChanged { focusState -> onWatchNowFocusChanged(focusState.hasFocus) }
 				.onKeyEvent { keyEvent ->
 					if (keyEvent.type != KeyEventType.KeyDown) return@onKeyEvent false
@@ -361,7 +359,9 @@ private fun CarouselForeground(
 						}
 
 						Key.DirectionUp -> {
-							HomeFocusCoordinator.moveToProfile()
+							// KFIN: rise to the status bar (last focused tab) - works from
+							// the first launch, not only after visiting the rows
+							CatalogBarFocus.focusSaved()
 							true
 						}
 
@@ -383,12 +383,13 @@ private fun CarouselForeground(
 				Icon(
 					imageVector = ImageVector.vectorResource(R.drawable.ic_play),
 					contentDescription = null,
-					tint = Color.White
+					tint = if (watchNowFocused) Color(0xF2000000) else Color.White
 				)
 				Spacer(Modifier.width(6.dp))
 				Text(
-					text = stringResource(R.string.watch),
-					color = Color.White,
+					// KFIN: uppercase like the rest of the UI labels
+					text = stringResource(R.string.watch).uppercase(),
+					color = if (watchNowFocused) Color(0xF2000000) else Color.White,
 					fontSize = 14.sp,
 					fontWeight = FontWeight.SemiBold
 				)
@@ -403,23 +404,25 @@ private fun CarouselIndicator(
 	activeIndex: Int,
 	modifier: Modifier = Modifier,
 ) {
+	// KFIN: dots only - no background pill; all dots are the same size, the
+	// active one is highlighted exactly like the buttons: outline only
 	Row(
 		modifier = modifier
-			.padding(16.dp)
-			.background(Color.Black.copy(alpha = 0.35f), CircleShape)
-			.padding(horizontal = 10.dp, vertical = 8.dp),
-		horizontalArrangement = Arrangement.spacedBy(6.dp)
+			.padding(16.dp),
+		horizontalArrangement = Arrangement.spacedBy(8.dp)
 	) {
 		repeat(itemCount) { index ->
 			val isActive = index == activeIndex
 			Box(
 				modifier = Modifier
+					.width(6.dp)
 					.height(6.dp)
-					.width(if (isActive) 20.dp else 6.dp)
 					.clip(CircleShape)
-					.background(
-						if (isActive) Color.White
-						else Color.White.copy(alpha = 0.35f)
+					.then(
+						if (isActive) Modifier
+							.background(Color(0xCC0B0D14))
+							.border(1.dp, Color(0xFFF8FAFC).copy(alpha = 0.7f), CircleShape)
+						else Modifier.background(Color.White.copy(alpha = 0.35f))
 					)
 			)
 		}

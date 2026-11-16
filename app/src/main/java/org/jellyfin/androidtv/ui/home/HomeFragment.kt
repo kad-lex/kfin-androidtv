@@ -24,6 +24,12 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 import androidx.fragment.compose.AndroidFragment
 import androidx.fragment.compose.content
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.drawWithContent
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -89,6 +95,9 @@ class HomeFragment : Fragment() {
 				modifier = Modifier
 					.fillMaxSize()
 					.padding(top = rowsTopBoundary)
+					// KFIN: erase row content alpha at the top/bottom edges instead
+					// of a hard cut - cards dissolve into the background
+					.then(Modifier.edgeFadeMask())
 					.focusGroup(),
 				maxLifecycle = Lifecycle.State.RESUMED,
 				onUpdate = { fragment ->
@@ -114,3 +123,22 @@ class HomeFragment : Fragment() {
 			.launchIn(viewLifecycleOwner.lifecycleScope)
 	}
 }
+
+// KFIN: alpha-mask fade at the top/bottom edges of the rows container -
+// content is erased (not covered) so the cut boundary stays invisible
+private fun Modifier.edgeFadeMask(): Modifier = this
+	.graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+	.drawWithContent {
+		drawContent()
+		drawRect(
+			brush = Brush.verticalGradient(
+				colorStops = arrayOf(
+					0f to Color.Transparent,
+					0.02f to Color.Black,
+					0.9f to Color.Black,
+					1f to Color.Transparent
+				)
+			),
+			blendMode = BlendMode.DstIn
+		)
+	}

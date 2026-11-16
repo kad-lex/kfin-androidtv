@@ -4,8 +4,8 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -19,22 +19,19 @@ fun SettingsDialog(
 	modifier: Modifier = Modifier,
 	screen: @Composable BoxScope.() -> Unit,
 ) {
-	val duration = 400
+	val duration = 280
 	DialogBase(
 		visible = visible,
 		onDismissRequest = onDismissRequest,
 		modifier = modifier,
-		contentAlignment = Alignment.TopEnd,
-		enterTransition = slideInHorizontally(
-			initialOffsetX = { it },
-			animationSpec = tween(duration, easing = FastOutSlowInEasing)
-		) + fadeIn(
+		// KFIN: no dim - the calling page stays fully visible
+		dimBackground = false,
+		contentAlignment = Alignment.TopCenter,
+		// KFIN: crossfade - appears in place instead of sliding from the top
+		enterTransition = fadeIn(
 			animationSpec = tween(duration)
 		),
-		exitTransition = slideOutHorizontally(
-			targetOffsetX = { it },
-			animationSpec = tween(duration, easing = FastOutSlowInEasing)
-		) + fadeOut(
+		exitTransition = fadeOut(
 			animationSpec = tween(duration)
 		),
 	) {

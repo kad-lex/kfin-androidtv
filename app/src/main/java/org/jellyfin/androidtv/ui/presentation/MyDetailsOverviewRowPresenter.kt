@@ -17,21 +17,28 @@ class MyDetailsOverviewRowPresenter(
 		private val markdownRenderer: MarkdownRenderer,
 	) : RowPresenter.ViewHolder(detailRowView) {
 		private val binding get() = detailRowView.binding
+		private var boundInfoItems: List<org.jellyfin.androidtv.data.model.InfoItem>? = null
+		private var boundGenreText: String? = null
+
+		// KFIN: genre row also carries the duration (and "ends" when available);
+		// the director field is not shown
+		private fun buildGenreLine(): String {
+			val meta = boundInfoItems
+				?.filter { it.label.isNotEmpty() && it.value.isNotEmpty() }
+				?.joinToString("    ") { "${it.label}: ${it.value}" }
+				.orEmpty()
+			return listOfNotNull(boundGenreText, meta.takeIf { it.isNotEmpty() })
+				.joinToString("    ")
+		}
 
 		fun setItem(row: MyDetailsOverviewRow) {
 			setTitle(row.item.name)
 
 			InfoLayoutHelper.addInfoRow(view.context, row.item, row.item.mediaSources?.getOrNull(row.selectedMediaSourceIndex), binding.fdMainInfoRow, false)
-			binding.fdGenreRow.text = row.item.genres?.joinToString(" / ")
-
-			binding.infoTitle1.text = row.infoItem1?.label
-			binding.infoValue1.text = row.infoItem1?.value
-
-			binding.infoTitle2.text = row.infoItem2?.label
-			binding.infoValue2.text = row.infoItem2?.value
-
-			binding.infoTitle3.text = row.infoItem3?.label
-			binding.infoValue3.text = row.infoItem3?.value
+			boundGenreText = row.item.genres?.joinToString(" / ")
+			// KFIN: only duration/ends are kept - the director field is not shown
+			boundInfoItems = listOfNotNull(row.infoItem2, row.infoItem3)
+			binding.fdGenreRow.text = buildGenreLine()
 
 			binding.mainImage.load(row.imageDrawable, null, null, 1.0, 0)
 
@@ -60,7 +67,12 @@ class MyDetailsOverviewRowPresenter(
 		}
 
 		fun setInfoValue3(text: String?) {
-			binding.infoValue3.text = text
+			// KFIN: "ends" value lives in the genre line; rebuild it with the new value
+			val items = boundInfoItems?.mapIndexed { index, item ->
+				if (index == 1) item.copy(value = text ?: "") else item
+			} ?: return
+			boundInfoItems = items
+			binding.fdGenreRow.text = buildGenreLine()
 		}
 	}
 

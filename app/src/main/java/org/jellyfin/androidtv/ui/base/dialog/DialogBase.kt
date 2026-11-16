@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,8 +25,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
+import android.view.WindowManager
 import org.jellyfin.androidtv.ui.base.JellyfinTheme
 import org.jellyfin.androidtv.ui.base.interactionTracker
 
@@ -38,6 +42,8 @@ fun DialogBase(
 	enterTransition: EnterTransition = fadeIn(tween(300)),
 	exitTransition: ExitTransition = fadeOut(tween(300)),
 	contentAlignment: Alignment = Alignment.Center,
+	// KFIN: dialogs can opt out of the platform dim and scrim
+	dimBackground: Boolean = true,
 	content: @Composable BoxScope.() -> Unit,
 ) {
 	val transition = updateTransition(visible)
@@ -50,7 +56,7 @@ fun DialogBase(
 		val focusRequester = remember { FocusRequester() }
 		var contentVisible by remember { mutableStateOf(false) }
 
-		Dialog(
+			Dialog(
 			onDismissRequest = onDismissRequest,
 			properties = DialogProperties(
 				dismissOnBackPress = true,
@@ -59,10 +65,20 @@ fun DialogBase(
 				decorFitsSystemWindows = false
 			),
 		) {
+			// KFIN: remove the platform dim when requested
+			if (!dimBackground) {
+				val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
+				SideEffect {
+					dialogWindow?.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+				}
+			}
 			Box(
 				modifier = modifier
 					.fillMaxSize()
-					.background(scrimColor.copy(alpha = scrimColor.alpha * alpha))
+					.background(
+						if (dimBackground) scrimColor.copy(alpha = scrimColor.alpha * alpha)
+						else Color.Transparent
+					)
 					.focusRequester(focusRequester)
 					.focusGroup()
 					.interactionTracker(),

@@ -49,6 +49,7 @@ import org.jellyfin.androidtv.ui.base.JellyfinTheme
 import org.jellyfin.androidtv.ui.base.ProvideLocalInteractionTracker
 import org.jellyfin.androidtv.ui.composable.compat.AppNavigationHost
 import org.jellyfin.androidtv.ui.home.HomeFocusCoordinator
+import org.jellyfin.androidtv.ui.shared.toolbar.ContentPrimaryAction
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
 import org.jellyfin.androidtv.ui.playback.CustomPlaybackOverlayFragment
 import org.jellyfin.androidtv.ui.player.video.VideoPlayerFragment
@@ -133,11 +134,18 @@ class MainActivity : FragmentActivity() {
 									.padding(start = 28.dp, top = statusBarMargin)
 									.onKeyEvent { keyEvent ->
 										if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionDown) {
-											if (HomeFocusCoordinator.isActive) {
-												HomeFocusCoordinator.moveToCarousel()
-												true
-											} else {
-												false
+											when {
+												HomeFocusCoordinator.isActive -> {
+													HomeFocusCoordinator.moveToCarousel()
+													true
+												}
+												// KFIN: on content screens DOWN from any status bar
+												// button jumps straight to the primary action
+												ContentPrimaryAction.hasPrimary -> {
+													ContentPrimaryAction.requestPrimary()
+													true
+												}
+												else -> false
 											}
 										} else {
 											false

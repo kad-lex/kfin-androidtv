@@ -4,6 +4,7 @@ import static org.koin.java.KoinJavaComponent.inject;
 
 import android.os.Bundle;
 import android.os.Handler;
+import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
@@ -14,8 +15,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.PopupWindow;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -54,6 +57,8 @@ import org.jellyfin.androidtv.ui.itemhandling.ItemRowAdapter;
 import org.jellyfin.androidtv.ui.itemhandling.ItemRowAdapterHelperKt;
 import org.jellyfin.androidtv.ui.presentation.CardPresenter;
 import org.jellyfin.androidtv.ui.presentation.HorizontalGridPresenter;
+import org.jellyfin.androidtv.ui.shared.toolbar.CatalogBarFocus;
+import org.jellyfin.androidtv.ui.shared.toolbar.ContentPrimaryAction;
 import org.jellyfin.androidtv.util.CoroutineUtils;
 import org.jellyfin.androidtv.util.ImageHelper;
 import org.jellyfin.androidtv.util.InfoLayoutHelper;
@@ -203,6 +208,14 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        // KFIN: the library grid keeps only the top edge fade, lifted a bit
+        if (binding.rowsFragment instanceof org.jellyfin.androidtv.ui.shared.EdgeFadeFrameLayout) {
+            org.jellyfin.androidtv.ui.shared.EdgeFadeFrameLayout fade =
+                    (org.jellyfin.androidtv.ui.shared.EdgeFadeFrameLayout) binding.rowsFragment;
+            fade.setBottomFadeEnabled(false);
+            fade.setTopFade(Utils.convertDpToPixel(requireContext(), 10) - 23f);
+        }
+
         binding.getRoot().getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
@@ -248,19 +261,34 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
 
     private void createGrid() {
         mGridViewHolder = mGridPresenter.onCreateViewHolder(binding.rowsFragment);
+        // KFIN: grid geometry is calculated in dp - convert to pixels before
+        // handing it to the grid view, otherwise the gaps are density-times
+        // smaller than intended (cards appear to touch)
+        int padLeft = Utils.convertDpToPixel(requireContext(), mGridPaddingLeft);
+        int padTop = Utils.convertDpToPixel(requireContext(), mGridPaddingTop);
         if (mGridViewHolder instanceof HorizontalGridPresenter.ViewHolder) {
             mGridView = ((HorizontalGridPresenter.ViewHolder) mGridViewHolder).getGridView();
             mGridView.setGravity(Gravity.CENTER_VERTICAL);
             ViewGroup.MarginLayoutParams titleMargin = (ViewGroup.MarginLayoutParams) binding.title.getLayoutParams();
             ViewGroup.MarginLayoutParams clockMargin = (ViewGroup.MarginLayoutParams) binding.clock.getLayoutParams();
-            mGridView.setPadding(titleMargin.getMarginStart(), mGridPaddingTop, clockMargin.getMarginEnd(), mGridPaddingTop); // prevent initial card cutoffs
+            mGridView.setPadding(titleMargin.getMarginStart(), padTop, clockMargin.getMarginEnd(), padTop); // prevent initial card cutoffs
         } else if (mGridViewHolder instanceof VerticalGridPresenter.ViewHolder) {
             mGridView = ((VerticalGridPresenter.ViewHolder) mGridViewHolder).getGridView();
             mGridView.setGravity(Gravity.CENTER_HORIZONTAL);
-            mGridView.setPadding(mGridPaddingLeft, mGridPaddingTop, mGridPaddingLeft, mGridPaddingTop); // prevent initial card cutoffs
+            mGridView.setPadding(padLeft, padTop, padLeft, padTop); // prevent initial card cutoffs
         }
-        mGridView.setHorizontalSpacing(mGridItemSpacingHorizontal);
-        mGridView.setVerticalSpacing(mGridItemSpacingVertical);
+        // KFIN: the grid spans the full width; card sizes already reserve room
+        // for the gaps, so the fixed-width cards plus gaps fit exactly
+        int spacingPx = Utils.convertDpToPixel(requireContext(), mGridItemSpacingHorizontal);
+        ViewGroup.LayoutParams gridLp = mGridView.getLayoutParams();
+        if (gridLp == null) {
+            gridLp = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+            mGridView.setLayoutParams(gridLp);
+        } else {
+            gridLp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+        }
+        mGridView.setHorizontalSpacing(spacingPx);
+        mGridView.setVerticalSpacing(Utils.convertDpToPixel(requireContext(), mGridItemSpacingVertical));
         mGridView.setFocusable(true);
         binding.rowsFragment.removeAllViews();
         binding.rowsFragment.addView(mGridViewHolder.view);
@@ -544,21 +572,17 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
             mCardsScreenEst = numRows * cardsCol;
             mCardsScreenStride = numRows;
         } else if (numCols > 0) {
-            double paddingPct = cardScaling / numCols;
-            double spacingPct = ((paddingPct / 2.0) * CARD_SPACING_PCT) * (numCols - 1);
-            if (mImageType == ImageType.BANNER) {
-                spacingPct = ((paddingPct / 2.0) * CARD_SPACING_HORIZONTAL_BANNER_PCT) * (numCols - 1);
-            }
-
-            double wastedSpacePct = paddingPct + spacingPct;
-            double usableCardSpace = mGridWidth / (1.0 + wastedSpacePct); // decrease size
+            // KFIN: grid spans edge to edge; reserve 10% of the width for the
+            // gaps up-front so the fixed-width cards plus the gaps always fit
+            // exactly (Leanback scrolls the grid horizontally otherwise)
+            int gapDp = (int) Math.round((mGridWidth * 0.10) / Math.max(numCols - 1, 1));
+            double usableCardSpace = mGridWidth - (gapDp * (numCols - 1));
             double cardWidth = usableCardSpace / numCols;
 
-            // KFIN: shrink cards by 5% so a visible gap appears between them at every scale
-            cardHeightInt = (int) Math.round(getCardHeightBy(cardWidth, mImageType, mFolder) * 0.95);
+            cardHeightInt = (int) Math.round(getCardHeightBy(cardWidth, mImageType, mFolder));
             int cardWidthInt = (int) getCardWidthBy(cardHeightInt, mImageType, mFolder);
 
-            // KFIN: grid spans edge to edge; all freed space goes into the gaps between cards
+            // KFIN: all reserved space goes into the gaps between cards
             int totalGapSpace = Math.max(mGridWidth - (cardWidthInt * numCols), 0);
             int gap = totalGapSpace / Math.max(numCols - 1, 1);
             spacingHorizontalInt = gap;
@@ -613,9 +637,31 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
     }
 
     @Override
+    public void onPause() {
+        super.onPause();
+        // KFIN: also clear the status-bar tools here; some exit paths
+        // (e.g. back to home) keep the view alive without onDestroyView
+        BrowseGridTools.INSTANCE.hide();
+        ContentPrimaryAction.INSTANCE.setPrimary(null);
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
-
+        // KFIN: tools were hidden in onPause; re-register them when coming back
+        // (e.g. after viewing an item and pressing back)
+        addTools();
+        // KFIN: DOWN from any status bar button lands on the leftmost card of the grid
+        ContentPrimaryAction.INSTANCE.setPrimary(() -> {
+            if (mGridView != null) {
+                if (mGridPresenter instanceof VerticalGridPresenter) {
+                    int cols = ((VerticalGridPresenter) mGridPresenter).getNumberOfColumns();
+                    int pos = mGridView.getSelectedPosition();
+                    if (cols > 0 && pos >= 0) mGridView.setSelectedPosition(pos - (pos % cols));
+                }
+                mGridView.requestFocus();
+            }
+        });
         // Use the poster size captured in onCreate for the whole lifetime of this
         // screen; re-reading it here picks up late server-side display-preference
         // syncs, which rebuilds the grid with different card geometry mid-session
@@ -778,25 +824,86 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
     }
 
     public void openSortMenu() {
-        //Create sort menu
-        // KFIN: opens right below the status bar, capsule styling like the bar
-        PopupMenu sortMenu = new PopupMenu(getActivity(), binding.menuAnchor, Gravity.END, 0, R.style.PopupMenu_Kfin);
-        for (Map.Entry<Integer, SortOption> entry : sortOptions.entrySet()) {
-            MenuItem item = sortMenu.getMenu().add(0, entry.getKey(), entry.getKey(), entry.getValue().name);
-            item.setChecked(entry.getValue().value.equals(libraryPreferences.get(LibraryPreferences.Companion.getSortBy())));
-        }
-        sortMenu.getMenu().setGroupCheckable(0, true, true);
-        sortMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                mAdapter.setSortBy(Objects.requireNonNull(sortOptions.get(item.getItemId())));
-                mAdapter.Retrieve();
-                item.setChecked(true);
-                updateDisplayPrefs();
-                return true;
+        // KFIN: centered popup dropping from below the status bar, capsule focus style
+        new SortPopup().show();
+    }
+
+    private class SortPopup {
+        private final PopupWindow popupWindow;
+        private TextView checkedView;
+
+        SortPopup() {
+            LinearLayout container = (LinearLayout) getLayoutInflater().inflate(R.layout.kfin_popup_list, binding.rowsFragment, false);
+            // KFIN: glass capsule like the status bar
+            GradientDrawable capsule = new GradientDrawable();
+            capsule.setShape(GradientDrawable.RECTANGLE);
+            capsule.setColor(0xCC0B0D14);
+            capsule.setCornerRadius(Utils.convertDpToPixel(requireContext(), 24));
+            capsule.setStroke(Utils.convertDpToPixel(requireContext(), 1), 0x33FFFFFF);
+            container.setBackground(capsule);
+
+            final int hPad = Utils.convertDpToPixel(requireContext(), 16);
+            final int vPad = Utils.convertDpToPixel(requireContext(), 10);
+            final int pillRadius = Utils.convertDpToPixel(requireContext(), 40);
+            final int focusedStroke = Utils.convertDpToPixel(requireContext(), 1);
+            final Object currentSort = libraryPreferences.get(LibraryPreferences.Companion.getSortBy());
+
+            popupWindow = new PopupWindow(container, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, true);
+            popupWindow.setOutsideTouchable(true);
+            popupWindow.setAnimationStyle(R.style.WindowAnimation_Fade);
+
+            for (Map.Entry<Integer, SortOption> entry : sortOptions.entrySet()) {
+                final SortOption option = entry.getValue();
+                boolean checked = option.value.equals(currentSort);
+                TextView item = new TextView(requireContext());
+                // KFIN: uppercase like the rest of the UI labels
+                item.setAllCaps(true);
+                item.setText(checked ? "\u2713  " + option.name : option.name);
+                item.setTextColor(Color.WHITE);
+                item.setTextSize(14);
+                item.setPadding(hPad, vPad, hPad, vPad);
+                item.setFocusable(true);
+                item.setFocusableInTouchMode(true);
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    item.setDefaultFocusHighlightEnabled(false);
+                }
+
+                // KFIN: unified focus style - white outline only
+                final GradientDrawable itemBg = new GradientDrawable();
+                itemBg.setShape(GradientDrawable.RECTANGLE);
+                itemBg.setCornerRadius(pillRadius);
+                itemBg.setStroke(0, 0x00000000);
+                item.setBackground(itemBg);
+                item.setOnFocusChangeListener((v, hasFocus) -> {
+                    // KFIN: selection - white pill slightly larger than the item
+                    itemBg.setColor(hasFocus ? 0xF2FFFFFF : 0x00000000);
+                    itemBg.setStroke(hasFocus ? focusedStroke : 0, hasFocus ? 0xB3F8FAFC : 0x00000000);
+                    item.setTextColor(hasFocus ? 0xF2000000 : Color.WHITE);
+                    LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) item.getLayoutParams();
+                    int grow = hasFocus ? Utils.convertDpToPixel(requireContext(), 3) : 0;
+                    lp.leftMargin = grow;
+                    lp.rightMargin = grow;
+                    lp.topMargin = grow / 2;
+                    lp.bottomMargin = grow / 2;
+                    item.setLayoutParams(lp);
+                });
+
+                item.setOnClickListener(v -> {
+                    mAdapter.setSortBy(option);
+                    mAdapter.Retrieve();
+                    updateDisplayPrefs();
+                    popupWindow.dismiss();
+                });
+                container.addView(item);
+                if (checked) checkedView = item;
             }
-        });
-        sortMenu.show();
+        }
+
+        void show() {
+            // KFIN: centered below the status bar, like the letter-jump bar
+            popupWindow.showAtLocation(binding.getRoot(), Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, Utils.convertDpToPixel(requireContext(), 76));
+            if (checkedView != null) checkedView.requestFocus();
+        }
     }
 
     public void applyUnwatchedFilter(boolean unwatchedOnly) {
@@ -852,7 +959,7 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
             layout.emptyPopup.setBackground(capsule);
             popupWindow = new PopupWindow(layout.emptyPopup, WIDTH, HEIGHT, true);
             popupWindow.setOutsideTouchable(true);
-            popupWindow.setAnimationStyle(R.style.WindowAnimation_SlideTop);
+            popupWindow.setAnimationStyle(R.style.WindowAnimation_Fade);
 
             alphaPicker = new AlphaPickerView(requireContext(), null);
             alphaPicker.setOnAlphaSelected(letter -> {

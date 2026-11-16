@@ -7,23 +7,33 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.findViewTreeCompositionContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
@@ -36,11 +46,17 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.constant.ImageType
+import org.jellyfin.androidtv.ui.base.Seekbar
+import org.jellyfin.androidtv.ui.base.SeekbarDefaults
 import org.jellyfin.androidtv.ui.base.Text
 import org.jellyfin.androidtv.ui.composable.AsyncImage
 import org.jellyfin.androidtv.ui.composable.item.ItemCard
 import org.jellyfin.androidtv.ui.composable.item.ItemCardBaseItemOverlay
 import org.jellyfin.androidtv.ui.composable.item.ItemPreview
+import org.jellyfin.androidtv.ui.composable.item.rememberPlayedPercentage
+import org.jellyfin.androidtv.ui.shared.extractAccentColor
+import org.jellyfin.androidtv.ui.shared.extractBottomStripColor
+import org.jellyfin.androidtv.ui.shared.loadSmallPosterBitmap
 import org.jellyfin.androidtv.ui.itemhandling.BaseItemDtoBaseRowItem
 import org.jellyfin.androidtv.ui.itemhandling.BaseRowItem
 import org.jellyfin.androidtv.ui.itemhandling.BaseRowType
@@ -321,12 +337,44 @@ private fun CardViewHolderContent(
 
 	val usePreview = displayConfig.overrideShowInfo ?: showInfo
 
+	// KFIN: colors extracted from the poster: accent (lower half) tints the
+	// focus border, the bottom-strip color fills the caption lip
+	val api = koinInject<ApiClient>()
+	val glowUrl = remember(image, api) {
+		image?.getUrl(api, maxWidth = 96, maxHeight = 96)
+	}
+	// KFIN: one accent color (lower half of the poster) drives both the
+	// focus border and the bottom lip
+	var cardAccent by remember(glowUrl) { mutableStateOf<Color?>(null) }
+	LaunchedEffect(glowUrl) {
+		val small = loadSmallPosterBitmap(context, glowUrl) ?: return@LaunchedEffect
+		cardAccent = extractAccentColor(small.asImageBitmap())
+	}
+
+	// KFIN: captions live in the bottom lip for both caption styles -
+	// inside the card (grid tooltips) and below the card (ItemPreview rows)
+	val hasCaption = title != null && item.baseItem != null && (usePreview || item.showCardInfoOverlay)
+
 	val card = @Composable {
 		ItemCard(
 			focused = focused,
+			accentColor = cardAccent,
+			// KFIN: the lip only exists where cards have captions (home rows) -
+			// library grids have no captions and no lip
+			lip = if (hasCaption) {
+				{
+					lipBox(
+						title = title!!,
+						// KFIN: no episode name as the second line - keeps the lip slim
+						subtitle = if (item.baseItem!!.type == BaseItemKind.EPISODE) null else subtitle,
+						focused = focused
+					)
+				}
+			} else null,
+			lipHeight = size.height * 0.25f,
+			lipColor = if (hasCaption) cardAccent else null,
 			image = {
 				if (image != null) {
-					val api = koinInject<ApiClient>()
 					AsyncImage(
 						url = image.getUrl(
 							api,
@@ -357,40 +405,13 @@ private fun CardViewHolderContent(
 				}
 			},
 			overlay = {
-				val showInfo = !usePreview && item.showCardInfoOverlay
 				item.baseItem?.let { baseItem ->
-					ItemCardBaseItemOverlay(
-						item = baseItem,
-						footer = {
-							if (showInfo && title != null) {
-								val focusModifier = if (focused) Modifier.basicMarquee(
-									iterations = Int.MAX_VALUE,
-									initialDelayMillis = 0,
-								) else Modifier
-
-								Box(
-									modifier = Modifier
-										.fillMaxWidth()
-										.background(Tokens.Color.colorBluegrey900.copy(alpha = 0.6f), RoundedCornerShape(4.dp)),
-								) {
-									Text(
-										text = title,
-										maxLines = 1,
-										overflow = TextOverflow.Ellipsis,
-										textAlign = TextAlign.Center,
-										color = Tokens.Color.colorWhite,
-										modifier = Modifier
-											.then(focusModifier)
-											.padding(Tokens.Space.spaceXs),
-									)
-								}
-							}
-						}
-					)
+					ItemCardBaseItemOverlay(item = baseItem, footer = null)
 				}
 			},
+			posterHeight = size.height,
 			modifier = Modifier
-				.size(size)
+				.width(size.width)
 		)
 	}
 
@@ -400,32 +421,43 @@ private fun CardViewHolderContent(
 			initialDelayMillis = 0,
 		) else Modifier
 
+		// KFIN: title/subtitle moved into the card's bottom lip
 		ItemPreview(
 			card = { card() },
-			title = title?.let { text ->
-				{
-					Text(
-						text = text,
-						maxLines = 1,
-						overflow = TextOverflow.Ellipsis,
-						textAlign = TextAlign.Center,
-						modifier = Modifier.then(focusModifier),
-					)
-				}
-			},
-			subtitle = subtitle?.let { text ->
-				{
-					Text(
-						text = text,
-						maxLines = 1,
-						overflow = TextOverflow.Ellipsis,
-						textAlign = TextAlign.Center,
-						modifier = Modifier.then(focusModifier),
-					)
-				}
-			},
+			title = null,
+			subtitle = null,
 		)
 	} else {
 		card()
+	}
+}
+
+// KFIN: caption lip content - wide band below the poster: title + subtitle
+@Composable
+private fun BoxScope.lipBox(title: String, subtitle: String?, focused: Boolean) {
+	androidx.compose.foundation.layout.Column(
+		modifier = Modifier
+			.fillMaxSize()
+			.padding(horizontal = 12.dp, vertical = 10.dp)
+	) {
+		Text(
+			text = title.uppercase(),
+			maxLines = 1,
+			overflow = TextOverflow.Ellipsis,
+			color = Tokens.Color.colorWhite,
+			fontWeight = FontWeight.Bold,
+			modifier = Modifier.then(
+				if (focused) Modifier.basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 0) else Modifier
+			),
+		)
+		if (subtitle != null) {
+			androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(4.dp))
+			Text(
+				text = subtitle,
+				maxLines = 1,
+				overflow = TextOverflow.Ellipsis,
+				color = Tokens.Color.colorGrey300,
+			)
+		}
 	}
 }

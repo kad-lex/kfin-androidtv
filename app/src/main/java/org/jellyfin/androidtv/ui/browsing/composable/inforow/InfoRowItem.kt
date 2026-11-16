@@ -1,6 +1,7 @@
 package org.jellyfin.androidtv.ui.browsing.composable.inforow
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -36,11 +37,14 @@ fun InfoRowItem(
 	content: @Composable RowScope.() -> Unit,
 ) {
 	val (backgroundColor, foregroundColor) = colors
+	val badgeShape = RoundedCornerShape(50)
 
 	val modifier = when {
 		backgroundColor.alpha > 0f -> Modifier
-			.background(backgroundColor, RoundedCornerShape(3.dp))
-			.padding(horizontal = 5.dp)
+			// KFIN: status-bar capsule - glass fill, subtle white border, pill shape
+			.border(1.dp, Color.White.copy(alpha = 0.12f), badgeShape)
+			.background(backgroundColor, badgeShape)
+			.padding(horizontal = 8.dp)
 
 		else -> Modifier
 	}

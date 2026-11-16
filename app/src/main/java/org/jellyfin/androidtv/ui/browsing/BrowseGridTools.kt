@@ -3,7 +3,10 @@ package org.jellyfin.androidtv.ui.browsing
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.vectorResource
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.ui.shared.toolbar.CatalogBarTools
@@ -19,6 +22,11 @@ object BrowseGridTools {
 	private var favoritesOnly by mutableStateOf(false)
 	private var unwatchedOnly by mutableStateOf(false)
 
+	// KFIN: horizontal position of the sort button in the status bar, so the
+	// sort popup can open on the same axis as the button
+	var sortButtonCenterX by mutableStateOf(-1f)
+		private set
+
 	fun show(fragment: BrowseGridFragment) {
 		this.fragment = fragment
 		val filters = fragment.filtersSafe
@@ -29,6 +37,9 @@ object BrowseGridTools {
 			GlassIconButton(
 				icon = ImageVector.vectorResource(R.drawable.ic_sort),
 				contentDescription = fragment.getString(R.string.lbl_sort_by),
+				modifier = Modifier.onGloballyPositioned { coordinates ->
+					sortButtonCenterX = coordinates.boundsInWindow().center.x
+				},
 				onClick = { fragment.openSortMenu() }
 			)
 			if (fragment.isItemsQuery()) {

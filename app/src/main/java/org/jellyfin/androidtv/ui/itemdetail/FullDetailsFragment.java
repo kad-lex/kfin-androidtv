@@ -82,6 +82,8 @@ import org.jellyfin.androidtv.util.sdk.TrailerUtils;
 import org.jellyfin.androidtv.util.sdk.compat.JavaCompat;
 import org.jellyfin.sdk.model.api.BaseItemDto;
 import org.jellyfin.sdk.model.api.BaseItemKind;
+import org.jellyfin.androidtv.ui.shared.toolbar.CatalogBarFocus;
+import org.jellyfin.androidtv.ui.shared.toolbar.ContentPrimaryAction;
 import org.jellyfin.sdk.model.api.BaseItemPerson;
 import org.jellyfin.sdk.model.api.MediaSourceInfo;
 import org.jellyfin.sdk.model.api.MediaStream;
@@ -282,6 +284,8 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
     public void onPause() {
         super.onPause();
         stopClock();
+        // KFIN: leaving the content page - reset the status bar DOWN action
+        ContentPrimaryAction.INSTANCE.setPrimary(null);
     }
 
     @Override
@@ -529,12 +533,6 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
                     addItemRow(adapter, additionalPartsAdapter, 0, getString(R.string.lbl_additional_parts));
                 }
 
-                //Cast/Crew
-                if (mBaseItem.getPeople() != null && !mBaseItem.getPeople().isEmpty()) {
-                    ItemRowAdapter castAdapter = new ItemRowAdapter(mBaseItem.getPeople(), requireContext(), new CardPresenter(true, 130), adapter);
-                    addItemRow(adapter, castAdapter, 1, getString(R.string.lbl_cast_crew));
-                }
-
                 //Specials
                 if (mBaseItem.getSpecialFeatureCount() != null && mBaseItem.getSpecialFeatureCount() > 0) {
                     addItemRow(adapter, new ItemRowAdapter(requireContext(), new GetSpecialsRequest(mBaseItem.getId()), new CardPresenter(), adapter), 3, getString(R.string.lbl_specials));
@@ -559,12 +557,6 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
                 addInfoRows(adapter);
                 break;
             case TRAILER:
-
-                //Cast/Crew
-                if (mBaseItem.getPeople() != null && !mBaseItem.getPeople().isEmpty()) {
-                    ItemRowAdapter castAdapter = new ItemRowAdapter(mBaseItem.getPeople(), requireContext(), new CardPresenter(true, 130), adapter);
-                    addItemRow(adapter, castAdapter, 0, getString(R.string.lbl_cast_crew));
-                }
 
                 //Similar
                 ItemRowAdapter similarTrailerAdapter = new ItemRowAdapter(requireContext(), BrowsingUtils.createSimilarItemsRequest(mBaseItem.getId()), QueryType.SimilarMovies, new CardPresenter(), adapter);
@@ -601,11 +593,6 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
 
                 ItemRowAdapter upcomingAdapter = new ItemRowAdapter(requireContext(), BrowsingUtils.createUpcomingEpisodesRequest(mBaseItem.getId()), new CardPresenter(), adapter);
                 addItemRow(adapter, upcomingAdapter, 2, getString(R.string.lbl_upcoming));
-
-                if (mBaseItem.getPeople() != null && !mBaseItem.getPeople().isEmpty()) {
-                    ItemRowAdapter seriesCastAdapter = new ItemRowAdapter(mBaseItem.getPeople(), requireContext(), new CardPresenter(true, 130), adapter);
-                    addItemRow(adapter, seriesCastAdapter, 3, getString(R.string.lbl_cast_crew));
-                }
 
                 ItemRowAdapter similarAdapter = new ItemRowAdapter(requireContext(), BrowsingUtils.createSimilarItemsRequest(mBaseItem.getId()), QueryType.SimilarSeries, new CardPresenter(), adapter);
                 addItemRow(adapter, similarAdapter, 4, getString(R.string.lbl_more_like_this));
@@ -759,9 +746,25 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
     TextUnderButton goToSeriesButton = null;
     TextUnderButton queueButton = null;
     TextUnderButton deleteButton = null;
-    TextUnderButton moreButton;
     TextUnderButton playButton = null;
     TextUnderButton trailerButton = null;
+
+    // KFIN: same type list as PlaybackLauncher.supportsExternalPlayer
+    private static boolean isExternalPlayable(BaseItemDto item) {
+        switch (item.getType()) {
+            case MOVIE:
+            case EPISODE:
+            case VIDEO:
+            case SERIES:
+            case SEASON:
+            case RECORDING:
+            case TV_CHANNEL:
+            case PROGRAM:
+                return true;
+            default:
+                return false;
+        }
+    }
 
     private void addButtons(int buttonSize) {
         BaseItemDto baseItem = mBaseItem;
@@ -781,19 +784,33 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
                 FullDetailsFragmentHelperKt.resumePlayback(FullDetailsFragment.this, v);
             }
         });
+        // KFIN: thin progress inside the capsule, DUNE-style
+        Double playedPct = baseItem.getUserData() != null ? baseItem.getUserData().getPlayedPercentage() : null;
+        mResumeButton.setProgress(playedPct != null ? (int) Math.round(playedPct) : 0);
 
         if (BaseItemExtensionsKt.canPlay(baseItem)) {
             mDetailsOverviewRow.addAction(mResumeButton);
             boolean isSeries = baseItem.getType() == BaseItemKind.SERIES;
             boolean isStarted = baseItem.getUserData().getPlayedPercentage() != null && baseItem.getUserData().getPlayedPercentage() > 0;
 
-            playButton = TextUnderButton.create(requireContext(), R.drawable.ic_play, buttonSize, 2, getString(BaseItemExtensionsKt.isLiveTv(mBaseItem) ? R.string.lbl_tune_to_channel : Utils.getSafeValue(mBaseItem.isFolder(), false) ? R.string.lbl_play_all : R.string.lbl_play), new View.OnClickListener() {
+            playButton = TextUnderButton.create(requireContext(), R.drawable.ic_play, buttonSize, 2, getString(BaseItemExtensionsKt.isLiveTv(mBaseItem) ? R.string.lbl_tune_to_channel : Utils.getSafeValue(mBaseItem.isFolder(), false) ? R.string.lbl_play_all : isStarted ? R.string.lbl_restart : R.string.lbl_play), new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     play(mBaseItem, 0, false);
                 }
             });
             mDetailsOverviewRow.addAction(playButton);
+
+            // KFIN: per-item external player launch, no settings switching needed
+            if (isExternalPlayable(baseItem)) {
+                TextUnderButton externalButton = TextUnderButton.create(requireContext(), R.drawable.ic_external_player, buttonSize, 0, getString(R.string.lbl_external_player), new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        FullDetailsFragmentHelperKt.chooseExternalPlayer(FullDetailsFragment.this);
+                    }
+                });
+                mDetailsOverviewRow.addAction(externalButton);
+            }
 
             if (isSeries && !isStarted) {
                 FullDetailsFragmentHelperKt.getNextUpEpisode(this, nextUpEpisode -> {
@@ -856,14 +873,13 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
         }
 
         if (TrailerUtils.hasPlayableTrailers(requireContext(), mBaseItem)) {
-            trailerButton = TextUnderButton.create(requireContext(), R.drawable.ic_trailer, buttonSize, 0, getString(R.string.lbl_play_trailers), new View.OnClickListener() {
+            // KFIN: short label so the whole row fits
+            trailerButton = TextUnderButton.create(requireContext(), R.drawable.ic_trailer, buttonSize, 0, getString(R.string.lbl_trailers), new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     FullDetailsFragmentHelperKt.playTrailers(FullDetailsFragment.this);
                 }
             });
-
-            mDetailsOverviewRow.addAction(trailerButton);
         }
 
         if (mProgramInfo != null && Utils.canManageRecordings(KoinJavaComponent.<UserRepository>get(UserRepository.class).getCurrentUser().getValue())) {
@@ -961,20 +977,28 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
         org.jellyfin.sdk.model.api.UserItemDataDto userData = mBaseItem.getUserData();
         if (userData != null && mProgramInfo == null) {
             if (mBaseItem.getType() != BaseItemKind.MUSIC_ARTIST && mBaseItem.getType() != BaseItemKind.PERSON) {
-                mWatchedToggleButton = TextUnderButton.create(requireContext(), R.drawable.ic_watch, buttonSize, 0, getString(R.string.lbl_watched), markWatchedListener);
+                // KFIN: icon-only watched toggle, DUNE-style
+                mWatchedToggleButton = TextUnderButton.create(requireContext(), R.drawable.ic_watch, buttonSize, 0, null, markWatchedListener);
                 mWatchedToggleButton.setActivated(userData.getPlayed());
+                mWatchedToggleButton.getBinding().imageButton.setContentDescription(getString(R.string.lbl_watched));
                 mDetailsOverviewRow.addAction(mWatchedToggleButton);
             }
 
-            //Favorite
-            favButton = TextUnderButton.create(requireContext(), R.drawable.ic_heart, buttonSize, 2, getString(R.string.lbl_favorite), new View.OnClickListener() {
+            // KFIN: icon-only favorite toggle, DUNE-style
+            favButton = TextUnderButton.create(requireContext(), R.drawable.ic_heart, buttonSize, 0, null, new View.OnClickListener() {
                 @Override
                 public void onClick(final View v) {
                     FullDetailsFragmentHelperKt.toggleFavorite(FullDetailsFragment.this);
                 }
             });
             favButton.setActivated(userData.isFavorite());
+            favButton.getBinding().imageButton.setContentDescription(getString(R.string.lbl_favorite));
             mDetailsOverviewRow.addAction(favButton);
+        }
+
+        // KFIN: trailer goes right after favorite in the row
+        if (trailerButton != null) {
+            mDetailsOverviewRow.addAction(trailerButton);
         }
 
         if (mBaseItem.getType() == BaseItemKind.EPISODE && mBaseItem.getSeriesId() != null) {
@@ -1009,12 +1033,14 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
         else if (mBaseItem.getCanDelete() != null) deletableItem = mBaseItem.getCanDelete();
 
         if (deletableItem) {
-            deleteButton = TextUnderButton.create(requireContext(), R.drawable.ic_delete, buttonSize, 0, getString(R.string.lbl_delete), new View.OnClickListener() {
+            // KFIN: icon-only delete button, DUNE-style
+            deleteButton = TextUnderButton.create(requireContext(), R.drawable.ic_delete, buttonSize, 0, null, new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     deleteItem();
                 }
             });
+            deleteButton.getBinding().imageButton.setContentDescription(getString(R.string.lbl_delete));
             mDetailsOverviewRow.addAction(deleteButton);
         }
 
@@ -1058,18 +1084,18 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
 
         }
 
-        //Now, create a more button to show if needed
-        moreButton = TextUnderButton.create(requireContext(), R.drawable.ic_more, buttonSize, 0, getString(R.string.lbl_other_options), new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                FullDetailsFragmentHelperKt.showDetailsMenu(FullDetailsFragment.this, v, mBaseItem);
-            }
-        });
+        // KFIN: no "other options" overflow - all actions stay in the main row
 
-        moreButton.setVisibility(View.GONE);
-        mDetailsOverviewRow.addAction(moreButton);
-        if (mBaseItem.getType() != BaseItemKind.EPISODE)
-            showMoreButtonIfNeeded();  //Episodes check for previous and then call this above
+        // KFIN: UP from the primary play buttons rises to the home tab of the status bar
+        View.OnKeyListener upToStatusBar = (v, keyCode, event) -> {
+            if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                CatalogBarFocus.INSTANCE.focusHome();
+                return true;
+            }
+            return false;
+        };
+        if (mResumeButton != null) mResumeButton.setOnKeyListener(upToStatusBar);
+        if (playButton != null) playButton.setOnKeyListener(upToStatusBar);
     }
 
     private void handleResumeButtonAndFocus(BaseItemDto nextUpEpisode) {
@@ -1088,6 +1114,12 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
         } else {
             playButton.requestFocus();
         }
+
+        // KFIN: DOWN from any status bar button lands on the primary action
+        ContentPrimaryAction.INSTANCE.setPrimary(() -> {
+            if (mResumeButton != null && mResumeButton.getVisibility() == View.VISIBLE) mResumeButton.requestFocus();
+            else if (playButton != null) playButton.requestFocus();
+        });
     }
 
     private void addVersionsMenu(View v) {
@@ -1118,38 +1150,8 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
         menu.show();
     }
 
-    int collapsedOptions = 0;
-
     void showMoreButtonIfNeeded() {
-        int visibleOptions = mDetailsOverviewRow.getVisibleActions();
-
-        List<TextUnderButton> actionsList = new ArrayList<>();
-        // added in order of priority (should match res/menu/menu_details_more.xml)
-        if (queueButton != null) actionsList.add(queueButton);
-        if (trailerButton != null) actionsList.add(trailerButton);
-        if (shuffleButton != null) actionsList.add(shuffleButton);
-        if (favButton != null) actionsList.add(favButton);
-        if (goToSeriesButton != null) actionsList.add(goToSeriesButton);
-
-        // reverse the list so the less important actions are hidden first
-        Collections.reverse(actionsList);
-
-        collapsedOptions = 0;
-        for (TextUnderButton action : actionsList) {
-            if (visibleOptions - (ViewKt.isVisible(action) ? 1 : 0) + (!ViewKt.isVisible(moreButton) && collapsedOptions > 0 ? 1 : 0) < 5) {
-                if (!ViewKt.isVisible(action)) {
-                    action.setVisibility(View.VISIBLE);
-                    visibleOptions++;
-                }
-            } else {
-                if (ViewKt.isVisible(action)) {
-                    action.setVisibility(View.GONE);
-                    visibleOptions--;
-                }
-                collapsedOptions++;
-            }
-        }
-        moreButton.setVisibility(collapsedOptions > 0 ? View.VISIBLE : View.GONE);
+        // KFIN: all actions live in the main row now - nothing to collapse
     }
 
     RecordPopup mRecordPopup;

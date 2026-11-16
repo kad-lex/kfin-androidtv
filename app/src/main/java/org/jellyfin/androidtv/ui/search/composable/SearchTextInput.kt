@@ -82,7 +82,7 @@ fun SearchTextInput(
 						.then(
 							if (focused) Modifier.border(
 								2.dp,
-								Color(0xFFF8FAFC).copy(alpha = 0.8f),
+								Color(0xFFF8FAFC).copy(alpha = 0.7f),
 								RoundedCornerShape(40.dp)
 							) else Modifier.border(
 								1.dp,

@@ -8,15 +8,22 @@
         android:id="@+id/title"
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true"
-        android:layout_marginStart="60sp"
-        android:layout_marginTop="20sp"
+        android:layout_marginStart="28dp"
+        android:layout_marginTop="96dp"
         android:textSize="32sp"
         android:layout_toStartOf="@+id/npBug"
         android:layout_marginEnd="10sp"
         android:maxLines="1"
         android:ellipsize="end"
-        android:fontFamily="sans-serif-light"
-         />
+        android:fontFamily="sans-serif"
+        android:textStyle="bold"
+        android:textAllCaps="true"
+         
+        android:shadowColor="#80000000"
+        android:shadowDx="0"
+        android:shadowDy="1"
+        android:shadowRadius="2"
+    />
 
     <LinearLayout
         android:orientation="horizontal"
@@ -35,12 +42,17 @@
         android:layout_below="@+id/infoRow"
         android:layout_alignStart="@+id/infoRow"
         android:ellipsize="end"
-        android:textSize="16sp"
+        android:textSize="15sp"
         android:layout_marginTop="12sp"
         android:maxLines="7"
-        android:fontFamily="sans-serif-light" />
+        android:fontFamily="sans-serif-light" 
+        android:shadowColor="#80000000"
+        android:shadowDx="0"
+        android:shadowDy="1"
+        android:shadowRadius="2"
+    />
 
-    <FrameLayout
+    <org.jellyfin.androidtv.ui.shared.EdgeFadeFrameLayout
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:layout_below="@+id/summary"

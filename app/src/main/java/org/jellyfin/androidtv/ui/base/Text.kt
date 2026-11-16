@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -48,6 +50,12 @@ fun Text(
 		text = text,
 		modifier = modifier.graphicsLayer { this.compositingStrategy = CompositingStrategy.Offscreen },
 		style = style.merge(
+			// KFIN: unified text shadow - 2px blur, 50% opacity
+			shadow = style.shadow ?: Shadow(
+				color = Color.Black.copy(alpha = 0.5f),
+				offset = Offset(0f, 1f),
+				blurRadius = 2f
+			),
 			color = textColor,
 			fontSize = fontSize,
 			fontWeight = fontWeight,
@@ -94,6 +102,12 @@ fun Text(
 		modifier = modifier.graphicsLayer { this.compositingStrategy = CompositingStrategy.Offscreen },
 		style =
 			style.merge(
+				// KFIN: unified text shadow - 2px blur, 50% opacity
+				shadow = style.shadow ?: Shadow(
+					color = Color.Black.copy(alpha = 0.5f),
+					offset = Offset(0f, 1f),
+					blurRadius = 2f
+				),
 				color = textColor,
 				fontSize = fontSize,
 				fontWeight = fontWeight,
