@@ -9,4 +9,10 @@ class JellyfinApplication : Application() {
 		super.attachBaseContext(base)
 		TelemetryService.init(this)
 	}
+
+	override fun onCreate() {
+		super.onCreate()
+		// KFIN debug: show stack traces on screen instead of a silent death
+		KfinCrashHandler.install(this)
+	}
 }

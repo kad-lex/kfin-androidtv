@@ -37,12 +37,10 @@ import androidx.lifecycle.Lifecycle;
 import org.jellyfin.androidtv.R;
 import org.jellyfin.androidtv.auth.repository.UserRepository;
 import org.jellyfin.androidtv.constant.CustomMessage;
-import org.jellyfin.androidtv.constant.QueryType;
 import org.jellyfin.androidtv.data.model.ChapterItemInfo;
 import org.jellyfin.androidtv.data.model.DataRefreshService;
 import org.jellyfin.androidtv.data.model.InfoItem;
 import org.jellyfin.androidtv.data.querying.GetAdditionalPartsRequest;
-import org.jellyfin.androidtv.data.querying.GetSpecialsRequest;
 import org.jellyfin.androidtv.data.querying.GetTrailersRequest;
 import org.jellyfin.androidtv.data.repository.CustomMessageRepository;
 import org.jellyfin.androidtv.data.service.BackgroundService;
@@ -65,6 +63,7 @@ import org.jellyfin.androidtv.ui.playback.PlaybackLauncher;
 import org.jellyfin.androidtv.ui.presentation.CardPresenter;
 import org.jellyfin.androidtv.ui.presentation.CustomListRowPresenter;
 import org.jellyfin.androidtv.ui.presentation.InfoCardPresenter;
+import org.jellyfin.androidtv.ui.presentation.KfinListItemPresenter;
 import org.jellyfin.androidtv.ui.presentation.MutableObjectAdapter;
 import org.jellyfin.androidtv.ui.presentation.MyDetailsOverviewRowPresenter;
 import org.jellyfin.androidtv.util.CoroutineUtils;
@@ -228,6 +227,12 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
     @Override
     public void onResume() {
         super.onResume();
+        org.jellyfin.androidtv.ui.shared.KfinNav.INSTANCE.setPreserveColumn(true);
+        // KFIN: DOWN from the action buttons lands on the first card of the first row
+        org.jellyfin.androidtv.ui.shared.KfinNav.INSTANCE.setFocusFirstRowAction(() -> {
+            focusFirstRow();
+            return kotlin.Unit.INSTANCE;
+        });
 
         ClockBehavior clockBehavior = userPreferences.getValue().get(UserPreferences.Companion.getClockBehavior());
         if (clockBehavior == ClockBehavior.ALWAYS || clockBehavior == ClockBehavior.IN_MENUS) {
@@ -280,9 +285,126 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
         }, 750);
     }
 
+    private void focusFirstRow() {
+        androidx.recyclerview.widget.RecyclerView rv = mRowsFragment.getVerticalGridView();
+        if (rv == null) return;
+        rv.post(() -> focusFirstRowAt(rv, 0));
+    }
+
+    private void focusFirstRowAt(androidx.recyclerview.widget.RecyclerView rv, int attempts) {
+        if (attempts > 3 || !isAdded()) return;
+        // KFIN: skip the overview row (it holds the action buttons) - find the
+        // first row that actually contains cards
+        androidx.recyclerview.widget.RecyclerView.LayoutManager lm = rv.getLayoutManager();
+        int count = lm == null ? 0 : lm.getItemCount();
+        for (int i = 0; i < Math.min(count, 8); i++) {
+            androidx.recyclerview.widget.RecyclerView.ViewHolder vh = rv.findViewHolderForAdapterPosition(i);
+            if (vh == null) {
+                rv.scrollToPosition(i);
+                rv.post(() -> focusFirstRowAt(rv, attempts + 1));
+                return;
+            }
+            final androidx.leanback.widget.HorizontalGridView grid = findGrid(vh.itemView);
+            if (grid == null) continue;
+            grid.setSelectedPosition(0);
+            grid.post(() -> {
+                androidx.recyclerview.widget.RecyclerView.ViewHolder card = grid.findViewHolderForAdapterPosition(0);
+                if (card != null) card.itemView.requestFocus();
+            });
+            return;
+        }
+        rv.requestFocus();
+    }
+
+    private static androidx.leanback.widget.HorizontalGridView findGrid(android.view.View view) {
+        if (view instanceof androidx.leanback.widget.HorizontalGridView) {
+            return (androidx.leanback.widget.HorizontalGridView) view;
+        }
+        if (view instanceof android.view.ViewGroup) {
+            android.view.ViewGroup group = (android.view.ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                androidx.leanback.widget.HorizontalGridView found = findGrid(group.getChildAt(i));
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+
+    // KFIN: async chunk grids arrive in random order - place every row at its
+    // designated slot instead of appending
+    private final java.util.HashMap<Row, Integer> rowOrder = new java.util.HashMap<>();
+    private final java.util.HashSet<java.util.UUID> seenRowItemIds = new java.util.HashSet<>();
+
+    private void addRowOrdered(MutableObjectAdapter<Row> parent, Row row, int order) {
+        rowOrder.put(row, order);
+        int insert = parent.size();
+        for (int i = 0; i < parent.size(); i++) {
+            Integer existing = rowOrder.get(parent.get(i));
+            if (existing != null && existing > order) {
+                insert = i;
+                break;
+            }
+        }
+        parent.add(insert, row);
+    }
+
+    // KFIN: turn an async row into a static chunk grid (N columns, dynamic
+    // row count) once its items arrive
+    private void addChunkedGridWhenLoaded(ItemRowAdapter source, MutableObjectAdapter<Row> parent,
+                                          int columns, CardPresenter presenter, int orderBase) {
+        source.Retrieve();
+        addChunkedGridPoll(source, parent, columns, presenter, orderBase, 0);
+    }
+
+    private void addChunkedGridPoll(ItemRowAdapter source, MutableObjectAdapter<Row> parent,
+                                    int columns, CardPresenter presenter, int orderBase, int attempts) {
+        if (!isAdded() || attempts > 50) return;
+        if (source.size() == 0) {
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(
+                    () -> addChunkedGridPoll(source, parent, columns, presenter, orderBase, attempts + 1), 200);
+            return;
+        }
+        // KFIN: the adapter hands out BaseRowItem wrappers - keep them as-is
+        List<BaseRowItem> items = new ArrayList<>();
+        for (int i = 0; i < source.size(); i++) items.add((BaseRowItem) source.get(i));
+        // KFIN: one list row per item - thumbnail left, title + description;
+        // duplicate server rows are skipped by item id
+        int rowIndex = 0;
+        for (BaseRowItem entry : items) {
+            if (!seenRowItemIds.add(entry.getItemId())) continue;
+            MutableObjectAdapter<BaseRowItem> single = new MutableObjectAdapter<>(new KfinListItemPresenter());
+            single.add(entry);
+            addRowOrdered(parent, new ListRow(new HeaderItem(rowIndex, ""), single), orderBase + rowIndex);
+            rowIndex++;
+        }
+    }
+
+    // KFIN: the cast is a fixed 6x2 grid - chunks of 6 actors, at most 12
+    private void addCastRows(MutableObjectAdapter<Row> adapter) {
+        if (mBaseItem.getPeople() == null || mBaseItem.getPeople().isEmpty()) return;
+
+        List<BaseItemPerson> people = new ArrayList<>(mBaseItem.getPeople());
+        if (people.size() > 12) people = new ArrayList<>(people.subList(0, 12));
+
+        int index = 1;
+        for (int start = 0; start < people.size(); start += 6) {
+            int end = Math.min(start + 6, people.size());
+            // KFIN: cast is back to the 6-per-row grid
+            ItemRowAdapter castAdapter = new ItemRowAdapter(people.subList(start, end), requireContext(), new CardPresenter(true, 130), adapter);
+            ListRow castRow = new ListRow(new HeaderItem(index, ""), castAdapter);
+            addRowOrdered(adapter, castRow, 400 + index);
+            index++;
+            castAdapter.setRow(castRow);
+            castAdapter.Retrieve();
+        }
+    }
+
     @Override
     public void onPause() {
         super.onPause();
+        // KFIN: DOWN from the action buttons lands on the first card of the first row
+        org.jellyfin.androidtv.ui.shared.KfinNav.INSTANCE.setFocusFirstRowAction(null);
+        org.jellyfin.androidtv.ui.shared.KfinNav.INSTANCE.setPreserveColumn(false);
         stopClock();
         // KFIN: leaving the content page - reset the status bar DOWN action
         ContentPrimaryAction.INSTANCE.setPrimary(null);
@@ -476,13 +598,23 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
 
             ClassPresenterSelector ps = new ClassPresenterSelector();
             ps.addClassPresenter(MyDetailsOverviewRow.class, mDorPresenter);
-            mListRowPresenter = new CustomListRowPresenter(Utils.convertDpToPixel(requireContext(), 10));
+            mListRowPresenter = new CustomListRowPresenter(Utils.convertDpToPixel(requireContext(), 2));
             ps.addClassPresenter(ListRow.class, mListRowPresenter);
             mRowsAdapter = new MutableObjectAdapter<Row>(ps);
             mRowsFragment.setAdapter(mRowsAdapter);
+            // KFIN: 2dp vertical gap between the cast/content rows
+            androidx.leanback.widget.VerticalGridView rowsGrid = mRowsFragment.getVerticalGridView();
+            if (rowsGrid != null) {
+                rowsGrid.setVerticalSpacing(Utils.convertDpToPixel(requireContext(), 2));
+                // KFIN: rows align with the description's 28dp left inset
+                rowsGrid.setPadding(Utils.convertDpToPixel(requireContext(), 28), rowsGrid.getPaddingTop(), rowsGrid.getPaddingRight(), rowsGrid.getPaddingBottom());
+                rowsGrid.setClipToPadding(false);
+            }
             mRowsAdapter.add(detailsOverviewRow);
 
             updateInfo(detailsOverviewRow.getItem());
+            rowOrder.clear();
+            seenRowItemIds.clear();
             addAdditionalRows(mRowsAdapter);
 
         }
@@ -509,7 +641,8 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
     }
 
     protected void addItemRow(MutableObjectAdapter<Row> parent, ItemRowAdapter row, int index, String headerText) {
-        HeaderItem header = new HeaderItem(index, headerText);
+        // KFIN: headers in caps
+        HeaderItem header = new HeaderItem(index, headerText.toUpperCase());
         ListRow listRow = new ListRow(header, row);
         parent.add(listRow);
         row.setRow(listRow);
@@ -533,34 +666,21 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
                     addItemRow(adapter, additionalPartsAdapter, 0, getString(R.string.lbl_additional_parts));
                 }
 
-                //Specials
-                if (mBaseItem.getSpecialFeatureCount() != null && mBaseItem.getSpecialFeatureCount() > 0) {
-                    addItemRow(adapter, new ItemRowAdapter(requireContext(), new GetSpecialsRequest(mBaseItem.getId()), new CardPresenter(), adapter), 3, getString(R.string.lbl_specials));
-                }
+                //Cast/Crew
+                // KFIN: no row header - actor names sit on the poster badges
+                addCastRows(adapter);
 
                 //Trailers
                 if (mBaseItem.getLocalTrailerCount() != null && mBaseItem.getLocalTrailerCount() > 1) {
                     addItemRow(adapter, new ItemRowAdapter(requireContext(), new GetTrailersRequest(mBaseItem.getId()), new CardPresenter(), adapter), 4, getString(R.string.lbl_trailers));
                 }
-
-                //Chapters
-                if (mBaseItem.getChapters() != null && !mBaseItem.getChapters().isEmpty()) {
-                    List<ChapterItemInfo> chapters = BaseItemExtensionsKt.buildChapterItems(mBaseItem);
-                    ItemRowAdapter chapterAdapter = new ItemRowAdapter(requireContext(), chapters, new CardPresenter(true, 120), adapter);
-                    addItemRow(adapter, chapterAdapter, 2, getString(R.string.lbl_chapters));
-                }
-
-                //Similar
-                ItemRowAdapter similarMoviesAdapter = new ItemRowAdapter(requireContext(), BrowsingUtils.createSimilarItemsRequest(mBaseItem.getId()), QueryType.SimilarMovies, new CardPresenter(), adapter);
-                addItemRow(adapter, similarMoviesAdapter, 5, getString(R.string.lbl_more_like_this));
-
                 addInfoRows(adapter);
                 break;
             case TRAILER:
 
-                //Similar
-                ItemRowAdapter similarTrailerAdapter = new ItemRowAdapter(requireContext(), BrowsingUtils.createSimilarItemsRequest(mBaseItem.getId()), QueryType.SimilarMovies, new CardPresenter(), adapter);
-                addItemRow(adapter, similarTrailerAdapter, 4, getString(R.string.lbl_more_like_this));
+                //Cast/Crew
+                addCastRows(adapter);
+
                 addInfoRows(adapter);
                 break;
             case PERSON:
@@ -580,22 +700,23 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
 
                 break;
             case SERIES:
-                ItemRowAdapter nextUpAdapter = new ItemRowAdapter(requireContext(), BrowsingUtils.createSeriesGetNextUpRequest(mBaseItem.getId()), false, new CardPresenter(true, 130), adapter);
-                addItemRow(adapter, nextUpAdapter, 0, getString(R.string.lbl_next_up));
+                // KFIN: episodes become a 3-column grid with cards 10% smaller
+                ItemRowAdapter nextUpAdapter = new ItemRowAdapter(requireContext(), BrowsingUtils.createSeriesEpisodesRequest(mBaseItem.getId()), 100, false, new CardPresenter(true, 117), adapter);
+                addChunkedGridWhenLoaded(nextUpAdapter, adapter, 3, new CardPresenter(true, 117), 100);
 
+                // KFIN: seasons become a 6-column grid with as many rows as
+                // needed - chunked once the async request delivers the items
                 ItemRowAdapter seasonsAdapter = new ItemRowAdapter(requireContext(), BrowsingUtils.createSeasonsRequest(mBaseItem.getId()), new CardPresenter(), adapter);
-                addItemRow(adapter, seasonsAdapter, 1, getString(R.string.lbl_seasons));
-
-                //Specials
-                if (mBaseItem.getSpecialFeatureCount() != null && mBaseItem.getSpecialFeatureCount() > 0) {
-                    addItemRow(adapter, new ItemRowAdapter(requireContext(), new GetSpecialsRequest(mBaseItem.getId()), new CardPresenter(), adapter), 3, getString(R.string.lbl_specials));
-                }
+                addChunkedGridWhenLoaded(seasonsAdapter, adapter, 6, new CardPresenter(), 200);
 
                 ItemRowAdapter upcomingAdapter = new ItemRowAdapter(requireContext(), BrowsingUtils.createUpcomingEpisodesRequest(mBaseItem.getId()), new CardPresenter(), adapter);
-                addItemRow(adapter, upcomingAdapter, 2, getString(R.string.lbl_upcoming));
+                ListRow upcomingRow = new ListRow(new HeaderItem(2, getString(R.string.lbl_upcoming).toUpperCase()), upcomingAdapter);
+                addRowOrdered(adapter, upcomingRow, 300);
+                upcomingAdapter.setRow(upcomingRow);
+                upcomingAdapter.Retrieve();
 
-                ItemRowAdapter similarAdapter = new ItemRowAdapter(requireContext(), BrowsingUtils.createSimilarItemsRequest(mBaseItem.getId()), QueryType.SimilarSeries, new CardPresenter(), adapter);
-                addItemRow(adapter, similarAdapter, 4, getString(R.string.lbl_more_like_this));
+                addCastRows(adapter);
+
                 break;
 
             case EPISODE:
@@ -607,29 +728,12 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
 
                 if (mBaseItem.getSeasonId() != null && mBaseItem.getIndexNumber() != null) {
                     // query index is zero-based but episode no is not
+                    // KFIN: empty header - visible header space, no text
                     ItemRowAdapter nextAdapter = new ItemRowAdapter(requireContext(), BrowsingUtils.createNextEpisodesRequest(mBaseItem.getSeasonId(), mBaseItem.getIndexNumber()), 0, false, true, new CardPresenter(true, 120), adapter);
-                    addItemRow(adapter, nextAdapter, 5, getString(R.string.lbl_next_episode));
+                    addItemRow(adapter, nextAdapter, 5, "");
                 }
 
-                //Guest stars
-                if (mBaseItem.getPeople() != null && !mBaseItem.getPeople().isEmpty()) {
-                    List<BaseItemPerson> guests = new ArrayList<>();
-                    for (BaseItemPerson person : mBaseItem.getPeople()) {
-                        if (person.getType() == PersonKind.GUEST_STAR) guests.add(person);
-                    }
-                    if (!guests.isEmpty()) {
-                        ItemRowAdapter castAdapter = new ItemRowAdapter(guests, requireContext(), new CardPresenter(true, 130), adapter);
-                        addItemRow(adapter, castAdapter, 0, getString(R.string.lbl_guest_stars));
-                    }
-                }
-
-                //Chapters
-                if (mBaseItem.getChapters() != null && !mBaseItem.getChapters().isEmpty()) {
-                    List<ChapterItemInfo> chapters = BaseItemExtensionsKt.buildChapterItems(mBaseItem);
-                    ItemRowAdapter chapterAdapter = new ItemRowAdapter(requireContext(), chapters, new CardPresenter(true, 120), adapter);
-                    addItemRow(adapter, chapterAdapter, 1, getString(R.string.lbl_chapters));
-                }
-
+                // KFIN: guest stars row removed
                 addInfoRows(adapter);
                 break;
 
@@ -837,7 +941,7 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
             }
 
             if (Utils.getSafeValue(mBaseItem.isFolder(), false) || baseItem.getType() == BaseItemKind.MUSIC_ARTIST) {
-                shuffleButton = TextUnderButton.create(requireContext(), R.drawable.ic_shuffle, buttonSize, 2, getString(R.string.lbl_shuffle_all), new View.OnClickListener() {
+                shuffleButton = TextUnderButton.create(requireContext(), R.drawable.ic_shuffle, buttonSize, 2, null, new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         play(mBaseItem, 0, true);
@@ -874,7 +978,7 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
 
         if (TrailerUtils.hasPlayableTrailers(requireContext(), mBaseItem)) {
             // KFIN: short label so the whole row fits
-            trailerButton = TextUnderButton.create(requireContext(), R.drawable.ic_trailer, buttonSize, 0, getString(R.string.lbl_trailers), new View.OnClickListener() {
+            trailerButton = TextUnderButton.create(requireContext(), R.drawable.ic_trailer, buttonSize, 0, null, new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     FullDetailsFragmentHelperKt.playTrailers(FullDetailsFragment.this);
@@ -1003,7 +1107,7 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
 
         if (mBaseItem.getType() == BaseItemKind.EPISODE && mBaseItem.getSeriesId() != null) {
             //add the prev button first so it will be there in proper position - we'll show it later if needed
-            mPrevButton = TextUnderButton.create(requireContext(), R.drawable.ic_previous_episode, buttonSize, 3, getString(R.string.lbl_previous_episode), new View.OnClickListener() {
+            mPrevButton = TextUnderButton.create(requireContext(), R.drawable.ic_previous_episode, buttonSize, 3, null, new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     if (mPrevItemId != null) {
@@ -1017,7 +1121,7 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
             //now go get our prev episode id
             FullDetailsFragmentHelperKt.populatePreviousButton(FullDetailsFragment.this);
 
-            goToSeriesButton = TextUnderButton.create(requireContext(), R.drawable.ic_tv, buttonSize, 0, getString(R.string.lbl_goto_series), new View.OnClickListener() {
+            goToSeriesButton = TextUnderButton.create(requireContext(), R.drawable.ic_next_episode_chevron, buttonSize, 3, null, new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     gotoSeries();
@@ -1086,16 +1190,8 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
 
         // KFIN: no "other options" overflow - all actions stay in the main row
 
-        // KFIN: UP from the primary play buttons rises to the home tab of the status bar
-        View.OnKeyListener upToStatusBar = (v, keyCode, event) -> {
-            if (event.getAction() == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_DPAD_UP) {
-                CatalogBarFocus.INSTANCE.focusHome();
-                return true;
-            }
-            return false;
-        };
-        if (mResumeButton != null) mResumeButton.setOnKeyListener(upToStatusBar);
-        if (playButton != null) playButton.setOnKeyListener(upToStatusBar);
+        // KFIN: key handling lives in MyDetailsOverviewRowPresenter (UP -> the
+        // description, DOWN -> the first card row) - no per-button overrides here
     }
 
     private void handleResumeButtonAndFocus(BaseItemDto nextUpEpisode) {
@@ -1192,7 +1288,7 @@ public class FullDetailsFragment extends Fragment implements RecordingIndicatorV
                                   RowPresenter.ViewHolder rowViewHolder, Row row) {
 
             if (!(item instanceof BaseRowItem)) return;
-            itemLauncher.getValue().launch((BaseRowItem) item, (ItemRowAdapter) ((ListRow) row).getAdapter(), requireContext());
+            itemLauncher.getValue().launch((BaseRowItem) item, (MutableObjectAdapter<Object>) ((ListRow) row).getAdapter(), requireContext());
         }
     }
 

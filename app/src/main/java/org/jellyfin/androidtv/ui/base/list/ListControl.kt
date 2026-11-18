@@ -1,12 +1,14 @@
 package org.jellyfin.androidtv.ui.base.list
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -67,17 +69,24 @@ fun ListControl(
 	Box(
 		modifier = modifier
 			.fillMaxWidth()
-			.clip(controlShape)
+			// KFIN: item height matches the watch button
+			.padding(vertical = 6.dp)
 			.then(
-				// KFIN: status-bar focus style - white border + 20% white fill, no glow
+				// KFIN: selection is a colour fill only - no outline; the corner
+				// radius matches the old outer ring so nothing sticks out
 				if (active && colors.focusedContainerColor == Color.Transparent) Modifier
-					.border(1.dp, Color(0xFFF8FAFC).copy(alpha = 0.7f), controlShape)
-					.background(Color.White.copy(alpha = 0.2f), controlShape)
+					.background(Color.White, RoundedCornerShape(22.dp))
 				else Modifier
 			)
 			.background(backgroundColor, controlShape)
 			.alpha(if (enabled) 1f else 0.4f),
 	) {
+		// KFIN: dark heading on the white selection pill
+		val headingColor = if (active && colors.focusedContainerColor == Color.Transparent) Color(0xE6000000) else JellyfinTheme.colorScheme.listHeadline
+		// KFIN: icons follow the text colour so they stay visible on the white fill
+		org.jellyfin.androidtv.ui.base.ProvideTextStyle(
+			value = org.jellyfin.androidtv.ui.base.LocalTextStyle.current.copy(color = headingColor)
+		) {
 		ListItemContent(
 			headingContent = headingContent,
 			overlineContent = overlineContent,
@@ -86,7 +95,8 @@ fun ListControl(
 			trailingContent = trailingContent,
 			footerContent = footerContent,
 			headingStyle = JellyfinTheme.typography.listHeadline
-				.copy(color = JellyfinTheme.colorScheme.listHeadline),
+				.copy(color = headingColor),
 		)
+		}
 	}
 }

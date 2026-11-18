@@ -44,10 +44,13 @@ class AlphaPickerView @JvmOverloads constructor(
 				}
 				background = pill
 				setOnFocusChangeListener { _, hasFocus ->
+					// KFIN: watch-button style - 80% white fill, dark text
+					pill.setColor(if (hasFocus) 0xFFFFFFFF.toInt() else 0x00000000)
 					pill.setStroke(
 						if (hasFocus) strokeWidth else 0,
-						if (hasFocus) 0xB3F8FAFC.toInt() else 0x00000000
+						if (hasFocus) 0xFFFFFFFF.toInt() else 0x00000000
 					)
+					setTextColor(if (hasFocus) 0xE6000000.toInt() else android.graphics.Color.WHITE)
 				}
 
 				setOnClickListener { _ ->

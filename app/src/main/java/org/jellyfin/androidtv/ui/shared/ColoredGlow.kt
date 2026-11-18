@@ -248,3 +248,47 @@ suspend fun loadSmallPosterBitmap(context: Context, url: String?): Bitmap? {
 		}.getOrNull()
 	}
 }
+
+// KFIN: instant accent for the library gradient - card posters are already
+// decoded by the grid, so publishing their accent avoids the black flash
+// while the background service extracts its own
+object KfinAccentHolder {
+	val color = kotlinx.coroutines.flow.MutableStateFlow<Color?>(null)
+}
+
+// KFIN: whether the background behind the status bar is light - the bar has
+// no substrate, so its content colors itself black/white accordingly
+object KfinBarStyle {
+	val isLight = kotlinx.coroutines.flow.MutableStateFlow(false)
+
+	fun luminanceOf(color: Color): Float =
+		0.299f * color.red + 0.587f * color.green + 0.114f * color.blue
+}
+
+// KFIN: true when the top part of the image at [url] is light
+suspend fun isImageLightAtTop(context: Context, url: String?): Boolean? {
+	if (url.isNullOrEmpty()) return null
+	return withContext(Dispatchers.IO) {
+		runCatching {
+			val request = ImageRequest.Builder(context)
+				.data(url)
+				.size(96, 96)
+				.allowHardware(false)
+				.build()
+			val result = SingletonImageLoader.get(context).execute(request)
+			val bitmap = result.image?.asDrawable(context.resources)
+				?.let { it as? BitmapDrawable }?.bitmap
+				?: return@runCatching null
+			var sum = 0.0
+			var count = 0
+			val h = bitmap.height / 3
+			for (y in 0 until h step 3) {
+				for (x in 0 until bitmap.width step 3) {
+					sum += android.graphics.Color.luminance(bitmap.getPixel(x, y)).toDouble()
+					count++
+				}
+			}
+			if (count == 0) null else (sum / count) > 0.5
+		}.getOrNull()
+	}
+}

@@ -94,7 +94,76 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 		currentRowIndex = safeIndex
 		HomeFocusCoordinator.setRowsFocused(true)
 		selectedPosition = safeIndex
-		verticalGridView?.post { verticalGridView?.requestFocus() }
+		// KFIN: land on the leftmost card of the row - with a hard fallback so
+		// the focus can never get lost
+		verticalGridView?.post { focusRowLeftmost(safeIndex, 0) }
+	}
+
+	// KFIN: selected card per row, kept across details navigation
+	private val savedCardPositions = mutableMapOf<Int, Int>()
+
+	override fun onPause() {
+		super.onPause()
+		val rv = verticalGridView ?: return
+		for (i in 0 until adapter.size()) {
+			val vh = rv.findViewHolderForAdapterPosition(i) ?: continue
+			val grid = findHorizontalGrid(vh.itemView) ?: continue
+			savedCardPositions[i] = grid.selectedPosition
+		}
+	}
+
+	// KFIN: restore focus to the card that was selected before diving deeper
+	fun focusCurrentCard() {
+		val index = currentRowIndex.coerceIn(0, (rowCount - 1).coerceAtLeast(0))
+		HomeFocusCoordinator.setRowsFocused(true)
+		selectedPosition = index
+		verticalGridView?.post { focusRowCurrent(index, 0) }
+	}
+
+	private fun focusRowCurrent(index: Int, attempts: Int) {
+		val rv = verticalGridView ?: return
+		val vh = rv.findViewHolderForAdapterPosition(index)
+		val grid = vh?.let { findHorizontalGrid(it.itemView) }
+		if (grid == null) {
+			if (attempts < 8) {
+				rv.scrollToPosition(index)
+				rv.post { focusRowCurrent(index, attempts + 1) }
+			} else {
+				rv.requestFocus()
+			}
+			return
+		}
+		val position = savedCardPositions[index] ?: grid.selectedPosition.coerceAtLeast(0)
+		grid.setSelectedPosition(position)
+		grid.post {
+			grid.findViewHolderForAdapterPosition(position)?.itemView?.requestFocus() ?: rv.requestFocus()
+		}
+	}
+
+	private fun focusRowLeftmost(index: Int, attempts: Int) {
+		val rv = verticalGridView ?: return
+		val vh = rv.findViewHolderForAdapterPosition(index)
+		val grid = vh?.let { findHorizontalGrid(it.itemView) }
+		if (grid == null) {
+			if (attempts < 8) {
+				rv.scrollToPosition(index)
+				rv.post { focusRowLeftmost(index, attempts + 1) }
+			} else {
+				rv.requestFocus()
+			}
+			return
+		}
+		grid.setSelectedPosition(0)
+		grid.post {
+			grid.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus() ?: rv.requestFocus()
+		}
+	}
+
+	private fun findHorizontalGrid(view: android.view.View): androidx.leanback.widget.HorizontalGridView? = when (view) {
+		is androidx.leanback.widget.HorizontalGridView -> view
+		is android.view.ViewGroup ->
+			(0 until view.childCount).firstNotNullOfOrNull { findHorizontalGrid(view.getChildAt(it)) }
+		else -> null
 	}
 
 	// Special rows
@@ -140,7 +209,7 @@ class HomeRowsFragment : RowsSupportFragment(), AudioEventListener, View.OnKeyLi
 
 			// Add sections to layout
 			withContext(Dispatchers.Main) {
-				val cardPresenter = CardPresenter()
+				val cardPresenter = CardPresenter(true, org.jellyfin.androidtv.constant.ImageType.POSTER, 150, false, resumeWide = true)
 
 				// Add rows in order
 				notificationsRow.addToRowsAdapter(requireContext(), cardPresenter, adapter as MutableObjectAdapter<Row>)

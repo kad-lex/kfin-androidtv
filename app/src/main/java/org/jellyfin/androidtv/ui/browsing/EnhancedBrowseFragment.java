@@ -126,6 +126,22 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
         mInfoRow = binding.infoRow;
         mSummary = binding.summary;
 
+        // KFIN: UP from the first row lands on the page title, then home
+        mTitle.setFocusable(true);
+        mTitle.setFocusableInTouchMode(true);
+        org.jellyfin.androidtv.ui.shared.KfinNav.INSTANCE.setTopAction(() -> {
+            mTitle.requestFocus();
+            return kotlin.Unit.INSTANCE;
+        });
+        mTitle.setOnKeyListener((v, keyCode, event) -> {
+            if (event.getAction() == android.view.KeyEvent.ACTION_DOWN
+                    && keyCode == android.view.KeyEvent.KEYCODE_DPAD_UP) {
+                org.jellyfin.androidtv.ui.shared.toolbar.CatalogBarFocus.INSTANCE.focusHome();
+                return true;
+            }
+            return false;
+        });
+
         // Inject the RowsSupportFragment in the results container
         if (getChildFragmentManager().findFragmentById(R.id.rowsFragment) == null) {
             mRowsFragment = new AutoFocusRowsFragment();
@@ -138,6 +154,12 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
         }
 
         mRowsFragment.setAdapter(mRowsAdapter);
+
+        // KFIN: no top edge fade - the first row's header must stay fully visible
+        if (binding.rowsFragment instanceof org.jellyfin.androidtv.ui.shared.EdgeFadeFrameLayout) {
+            ((org.jellyfin.androidtv.ui.shared.EdgeFadeFrameLayout) binding.rowsFragment)
+                    .setTopFade(0f);
+        }
 
         return binding.getRoot();
     }
@@ -194,7 +216,7 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
         // React to deletion
         DataRefreshService dataRefreshService = KoinJavaComponent.<DataRefreshService>get(DataRefreshService.class);
         if (mCurrentRow != null && mCurrentItem != null && mCurrentItem.getItemId() != null && mCurrentItem.getItemId().equals(dataRefreshService.getLastDeletedItemId())) {
-            ((ItemRowAdapter) mCurrentRow.getAdapter()).remove(mCurrentItem);
+            if (mCurrentRow.getAdapter() instanceof ItemRowAdapter) ((ItemRowAdapter) mCurrentRow.getAdapter()).remove(mCurrentItem);
             dataRefreshService.setLastDeletedItemId(null);
         }
 
@@ -211,7 +233,7 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
                         for (int i = 0; i < mRowsAdapter.size(); i++) {
                             if (mRowsAdapter.get(i) instanceof ListRow) {
                                 if (((ListRow) mRowsAdapter.get(i)).getAdapter() instanceof ItemRowAdapter) {
-                                    ((ItemRowAdapter) ((ListRow) mRowsAdapter.get(i)).getAdapter()).ReRetrieveIfNeeded();
+                                    if (((ListRow) mRowsAdapter.get(i)).getAdapter() instanceof ItemRowAdapter) ((ItemRowAdapter) ((ListRow) mRowsAdapter.get(i)).getAdapter()).ReRetrieveIfNeeded();
                                 }
                             }
                         }
@@ -351,7 +373,7 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
 
     private void refreshCurrentItem() {
         if (mCurrentRow == null || mCurrentItem == null) return;
-        ItemRowAdapterHelperKt.refreshItem((ItemRowAdapter) mCurrentRow.getAdapter(), api.getValue(), this, mCurrentItem);
+        if (mCurrentRow.getAdapter() instanceof ItemRowAdapter) ItemRowAdapterHelperKt.refreshItem((ItemRowAdapter) mCurrentRow.getAdapter(), api.getValue(), this, mCurrentItem);
     }
 
     private final class SpecialViewClickedListener implements OnItemViewClickedListener {
@@ -452,7 +474,7 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
         public void onItemClicked(final Presenter.ViewHolder itemViewHolder, Object item, RowPresenter.ViewHolder rowViewHolder, Row row) {
             if (!(item instanceof BaseRowItem)) return;
 
-            itemLauncher.getValue().launch((BaseRowItem) item, (ItemRowAdapter) ((ListRow) row).getAdapter(), requireContext());
+            itemLauncher.getValue().launch((BaseRowItem) item, (MutableObjectAdapter<Object>) ((ListRow) row).getAdapter(), requireContext());
         }
     }
 
@@ -486,8 +508,11 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
 
             InfoLayoutHelper.addInfoRow(requireContext(), rowItem.getBaseItem(), mInfoRow, true);
 
-            ItemRowAdapter adapter = (ItemRowAdapter) ((ListRow) row).getAdapter();
-            adapter.loadMoreItemsIfNeeded(adapter.indexOf(rowItem));
+            // KFIN: static chunk rows have no paging - skip loadMore for them
+            if (((ListRow) row).getAdapter() instanceof ItemRowAdapter) {
+                ItemRowAdapter adapter = (ItemRowAdapter) ((ListRow) row).getAdapter();
+                adapter.loadMoreItemsIfNeeded(adapter.indexOf(rowItem));
+            }
 
             backgroundService.getValue().setBackground(rowItem.getBaseItem());
         }

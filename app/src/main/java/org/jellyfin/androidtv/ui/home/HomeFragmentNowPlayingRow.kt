@@ -31,7 +31,7 @@ class HomeFragmentNowPlayingRow(
 		if (mediaManager.hasAudioQueueItems()) {
 			// Ensure row exists
 			if (row == null) row = ListRow(
-				HeaderItem(context.getString(R.string.lbl_now_playing)),
+				HeaderItem(context.getString(R.string.lbl_now_playing).uppercase()),
 				AudioQueueBaseRowAdapter(playbackManager, lifecycleScope)
 			)
 			// Add row if it wasn't added already

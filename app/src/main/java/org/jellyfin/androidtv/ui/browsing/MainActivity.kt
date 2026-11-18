@@ -50,12 +50,15 @@ import org.jellyfin.androidtv.ui.base.ProvideLocalInteractionTracker
 import org.jellyfin.androidtv.ui.composable.compat.AppNavigationHost
 import org.jellyfin.androidtv.ui.home.HomeFocusCoordinator
 import org.jellyfin.androidtv.ui.shared.toolbar.ContentPrimaryAction
+import org.jellyfin.androidtv.ui.shared.toolbar.ProfileClockCapsule
 import org.jellyfin.androidtv.ui.navigation.NavigationRepository
 import org.jellyfin.androidtv.ui.playback.CustomPlaybackOverlayFragment
 import org.jellyfin.androidtv.ui.player.video.VideoPlayerFragment
 import org.jellyfin.androidtv.ui.screensaver.InAppScreensaver
 import org.jellyfin.androidtv.ui.settings.compat.MainActivitySettings
 import org.jellyfin.androidtv.ui.shared.toolbar.HomeStatusBar
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import org.jellyfin.androidtv.ui.startup.StartupActivity
 import org.jellyfin.androidtv.util.applyTheme
 import org.jellyfin.playback.core.PlaybackManager
@@ -106,15 +109,23 @@ class MainActivity : FragmentActivity() {
 
 						val playState by playbackManager.state.playState.collectAsState()
 						val isPlayerShown = remember { mutableStateOf(false) }
+						// KFIN: the details page manages its own navigation - no status bar
+						val isDetailsShown = remember { mutableStateOf(false) }
 						DisposableEffect(Unit) {
 							val callback = object : FragmentManager.FragmentLifecycleCallbacks() {
 								override fun onFragmentResumed(fm: FragmentManager, fragment: Fragment) {
 									isPlayerShown.value = fragment is CustomPlaybackOverlayFragment || fragment is VideoPlayerFragment
+									isDetailsShown.value = fragment is org.jellyfin.androidtv.ui.itemdetail.FullDetailsFragment
+										|| fragment is org.jellyfin.androidtv.ui.browsing.CollectionFragment
 								}
 
 								override fun onFragmentPaused(fm: FragmentManager, fragment: Fragment) {
 									if (fragment is CustomPlaybackOverlayFragment || fragment is VideoPlayerFragment) {
 										isPlayerShown.value = false
+									}
+									if (fragment is org.jellyfin.androidtv.ui.itemdetail.FullDetailsFragment) {
+										org.jellyfin.androidtv.ui.shared.toolbar.CatalogBarFocus.returnFromDetails = true
+										org.jellyfin.androidtv.ui.shared.toolbar.CatalogBarFocus.skipHomeAutofocusOnce = true
 									}
 								}
 							}
@@ -122,7 +133,7 @@ class MainActivity : FragmentActivity() {
 							onDispose { supportFragmentManager.unregisterFragmentLifecycleCallbacks(callback) }
 						}
 						AnimatedVisibility(
-							visible = !isPlayerShown.value && playState != PlayState.PLAYING && playState != PlayState.PAUSED,
+							visible = !isPlayerShown.value && !isDetailsShown.value && playState != PlayState.PLAYING && playState != PlayState.PAUSED,
 							modifier = Modifier.align(Alignment.TopStart),
 							enter = fadeIn(tween(300)),
 							exit = fadeOut(tween(300))
@@ -131,19 +142,24 @@ class MainActivity : FragmentActivity() {
 							Box(
 								modifier = Modifier
 									.zIndex(1f)
-									.padding(start = 28.dp, top = statusBarMargin)
+									.padding(start = 28.dp + with(LocalDensity.current) { 2.5f.toDp() }, top = statusBarMargin + with(LocalDensity.current) { 2.5f.toDp() })
 									.onKeyEvent { keyEvent ->
-										if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key == Key.DirectionDown) {
-											when {
-												HomeFocusCoordinator.isActive -> {
-													HomeFocusCoordinator.moveToCarousel()
-													true
-												}
-												// KFIN: on content screens DOWN from any status bar
-												// button jumps straight to the primary action
-												ContentPrimaryAction.hasPrimary -> {
-													ContentPrimaryAction.requestPrimary()
-													true
+										if (keyEvent.type == KeyEventType.KeyDown) {
+											when (keyEvent.key) {
+												// KFIN: moving up from the status bar is blocked
+												Key.DirectionUp -> true
+												Key.DirectionDown -> when {
+													HomeFocusCoordinator.isActive -> {
+														HomeFocusCoordinator.moveToCarousel()
+														true
+													}
+													// KFIN: on content screens DOWN from any status bar
+													// button jumps straight to the primary action
+													ContentPrimaryAction.hasPrimary -> {
+														ContentPrimaryAction.requestPrimary()
+														true
+													}
+													else -> false
 												}
 												else -> false
 											}
@@ -153,6 +169,53 @@ class MainActivity : FragmentActivity() {
 									}
 							) {
 								HomeStatusBar()
+
+								// KFIN: default focus on the home button at app start
+								var autoFocusedHome by remember { androidx.compose.runtime.mutableStateOf(false) }
+								androidx.compose.runtime.LaunchedEffect(Unit) {
+									if (!autoFocusedHome) {
+										autoFocusedHome = true
+										kotlinx.coroutines.delay(600)
+										if (supportFragmentManager.backStackEntryCount == 0 && !org.jellyfin.androidtv.ui.shared.toolbar.CatalogBarFocus.skipHomeAutofocusOnce) {
+											org.jellyfin.androidtv.ui.shared.toolbar.CatalogBarFocus.focusHome()
+										} else {
+										org.jellyfin.androidtv.ui.shared.toolbar.CatalogBarFocus.skipHomeAutofocusOnce = false
+										}
+									}
+								}
+							}
+
+						}
+
+
+						// KFIN: clock + profile capsule, top-right, home screen only (hidden on details)
+						val statusBarMarginGlobal = with(LocalDensity.current) { 20.toDp() }
+						if (!isPlayerShown.value && !isDetailsShown.value && playState != PlayState.PLAYING && playState != PlayState.PAUSED) {
+							Box(
+								modifier = Modifier
+									.align(Alignment.TopEnd)
+									.zIndex(1f)
+									.padding(
+										top = statusBarMarginGlobal + with(LocalDensity.current) { 2.5f.toDp() },
+										end = 28.dp + with(LocalDensity.current) { 2.5f.toDp() }
+									)
+									// KFIN: the profile capsule is one layer with the status bar
+									.onKeyEvent { keyEvent ->
+										if (keyEvent.type == KeyEventType.KeyDown) {
+											when (keyEvent.key) {
+												Key.DirectionUp -> true
+												Key.DirectionDown -> {
+													HomeFocusCoordinator.moveToCarousel()
+													true
+												}
+												else -> false
+											}
+										} else {
+											false
+										}
+									}
+							) {
+								ProfileClockCapsule()
 							}
 						}
 
@@ -211,7 +274,14 @@ class MainActivity : FragmentActivity() {
 				KeyEvent.KEYCODE_DPAD_DOWN -> if (HomeFocusCoordinator.moveDown()) return true
 			}
 		}
-		return super.dispatchKeyEvent(event)
+		return try {
+			super.dispatchKeyEvent(event)
+		} catch (e: IllegalArgumentException) {
+			// KFIN: Compose's FocusFinder crashes when a view is detached mid
+			// focus search (rows rebuilt/title reparented) - swallow and ignore
+			Timber.w(e, "focus search raced a detached view")
+			true
+		}
 	}
 
 	private fun Fragment.onKeyEvent(keyCode: Int, event: KeyEvent?): Boolean {

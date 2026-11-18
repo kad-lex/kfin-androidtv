@@ -3,7 +3,7 @@ package org.jellyfin.androidtv.util;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MenuItem;
-import android.widget.PopupMenu;
+import androidx.appcompat.widget.PopupMenu;
 
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.LifecycleOwner;
@@ -175,6 +175,28 @@ public class KeyProcessor {
         return false;
     }
 
+    // KFIN: AppCompat PopupMenu keeps a system plate with shadow insets behind
+    // the content - replace the popup window background with the standard menu
+    // capsule (black + soft outline, same as the player menus)
+    private static void stylePopupMenu(PopupMenu menu, android.content.Context context) {
+        try {
+            java.lang.reflect.Field helperField = PopupMenu.class.getDeclaredField("mPopup");
+            helperField.setAccessible(true);
+            Object helper = helperField.get(menu);
+            java.lang.reflect.Field popupField = helper.getClass().getDeclaredField("mPopup");
+            popupField.setAccessible(true);
+            Object popup = popupField.get(helper);
+            java.lang.reflect.Field windowField = popup.getClass().getDeclaredField("mPopup");
+            windowField.setAccessible(true);
+            androidx.appcompat.widget.ListPopupWindow listPopup =
+                    (androidx.appcompat.widget.ListPopupWindow) windowField.get(popup);
+            listPopup.setBackgroundDrawable(
+                    context.getDrawable(org.jellyfin.androidtv.R.drawable.kfin_menu_background));
+        } catch (Exception e) {
+            Timber.w(e, "unable to restyle popup menu background");
+        }
+    }
+
     public PopupMenu createItemMenu(BaseRowItem rowItem, UserItemDataDto userData, FragmentActivity activity) {
         BaseItemDto item = rowItem.getBaseItem();
         PopupMenu menu = new PopupMenu(activity, activity.getCurrentFocus(), Gravity.END);
@@ -251,7 +273,9 @@ public class KeyProcessor {
         }
 
         menu.setOnMenuItemClickListener(new KeyProcessorItemMenuClickListener(activity, rowItem));
+        stylePopupMenu(menu, activity);
         menu.show();
+        styleContextMenu(menu);
         return menu;
     }
 
@@ -268,7 +292,15 @@ public class KeyProcessor {
         }
 
         menu.setOnMenuItemClickListener(new KeyProcessorItemMenuClickListener(activity, rowItem));
+        stylePopupMenu(menu, activity);
         menu.show();
+        styleContextMenu(menu);
+    }
+
+    private static void styleContextMenu(PopupMenu menu) {
+        // KFIN: status-bar style capsule (80%), white pill selection, dark text
+        org.jellyfin.androidtv.ui.playback.overlay.action.PopupMenuStyler.INSTANCE
+                .style(menu, org.jellyfin.androidtv.R.drawable.kfin_context_background);
     }
 
     private class KeyProcessorItemMenuClickListener implements PopupMenu.OnMenuItemClickListener {

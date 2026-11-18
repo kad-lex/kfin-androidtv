@@ -99,6 +99,8 @@
             android:initOrder="10" />
 
         <!-- Authentication -->
+        <activity android:name=".CrashActivity" android:exported="false" android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
+
         <activity
             android:name=".ui.startup.StartupActivity"
             android:exported="true"

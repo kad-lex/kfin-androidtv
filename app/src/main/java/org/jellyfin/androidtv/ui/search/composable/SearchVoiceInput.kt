@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -86,7 +87,14 @@ fun SearchVoiceInput(
 			)
 		}
 
-		val colors = IconButtonDefaults.colors().let {
+		// KFIN: status-bar style matte glass, 80%
+		val glassColors = IconButtonDefaults.colors(
+			containerColor = Color(0xCC0B0D14).copy(alpha = 0.8f),
+			contentColor = Color.White,
+			focusedContainerColor = Color(0xD9FFFFFF),
+			focusedContentColor = Color(0xE6000000),
+		)
+		val colors = glassColors.let {
 			if (recognizer.status is SpeechRecognizerStatus.Listening) it.copy(
 				containerColor = JellyfinTheme.colorScheme.recording,
 				contentColor = JellyfinTheme.colorScheme.onRecording,

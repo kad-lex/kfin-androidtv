@@ -14,10 +14,10 @@ class CustomRowHeaderPresenter : RowHeaderPresenter() {
 		(holder.view as? TextView)?.let { view ->
 			val family = view.typeface
 			view.setTypeface(family ?: Typeface.DEFAULT, Typeface.BOLD)
-			view.isAllCaps = true
+			view.text = view.text?.toString()?.uppercase()
 		}
-		// KFIN: lower the header so it is not cut by the row boundary above
+		// KFIN: raised 5px from the previous position
 		val density = holder.view.resources.displayMetrics.density
-		holder.view.translationY = 12f * density - 4f
+		holder.view.translationY = 12f * density - 9f
 	}
 }

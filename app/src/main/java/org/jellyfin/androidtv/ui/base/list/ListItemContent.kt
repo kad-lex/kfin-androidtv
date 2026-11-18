@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import org.jellyfin.androidtv.ui.base.JellyfinTheme
@@ -43,7 +44,10 @@ fun ListItemContent(
 						.sizeIn(minWidth = 24.dp),
 					contentAlignment = Alignment.Center,
 					content = {
-						ProvideTextStyle(LocalTextStyle.current.copy(color = JellyfinTheme.colorScheme.listCaption)) {
+						// KFIN: icons follow the text color (inverted on selection)
+						val inherited = LocalTextStyle.current.color
+						val iconColor = if (inherited != Color.Unspecified) inherited else JellyfinTheme.colorScheme.listCaption
+						ProvideTextStyle(LocalTextStyle.current.copy(color = iconColor)) {
 							content()
 						}
 					}
@@ -68,7 +72,10 @@ fun ListItemContent(
 
 				captionContent?.let { content ->
 					Spacer(Modifier.height(Tokens.Space.spaceXs))
-					ProvideTextStyle(JellyfinTheme.typography.listCaption.copy(color = JellyfinTheme.colorScheme.listCaption)) {
+					// KFIN: caption follows the item color so it inverts on selection
+					val inheritedColor = LocalTextStyle.current.color
+					val captionColor = if (inheritedColor != Color.Unspecified) inheritedColor else JellyfinTheme.colorScheme.listCaption
+					ProvideTextStyle(JellyfinTheme.typography.listCaption.copy(color = captionColor)) {
 						content()
 					}
 				}

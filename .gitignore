@@ -10,3 +10,6 @@ captures/
 
 # Local APK archive for rollback
 releases/
+
+# Branding sources
+branding/

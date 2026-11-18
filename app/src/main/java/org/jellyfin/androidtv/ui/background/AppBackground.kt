@@ -2,12 +2,8 @@ package org.jellyfin.androidtv.ui.background
 
 import android.graphics.drawable.ColorDrawable
 import android.os.Build
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.snap
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -29,6 +25,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -77,21 +74,24 @@ fun AppBackground() {
 	val backgroundService = koinInject<BackgroundService>()
 	val currentBackground by backgroundService.currentBackground.collectAsState()
 	val enabled by backgroundService.enabled.collectAsState()
+	val gradientBackground by backgroundService.gradientBackground.collectAsState()
 
 	if (enabled) {
-		AnimatedContent(
-			targetState = currentBackground,
-			transitionSpec = {
-				val duration = (BackgroundService.TRANSITION_DURATION.inWholeMilliseconds / 2).toInt()
-				fadeIn(tween(durationMillis = duration)) togetherWith fadeOut(snap(delayMillis = duration))
-			},
-			label = "BackgroundTransition",
-		) { background ->
-			if (background != null) {
-				BackdropWithBlurBoundary(background)
-			} else {
-				AppThemeBackground()
-			}
+		// KFIN: libraries keep a plain black background - no gradient
+		if (gradientBackground) {
+			org.jellyfin.androidtv.ui.shared.KfinBarStyle.isLight.value = false
+			Box(modifier = Modifier.fillMaxSize().background(Color.Black))
+			return
+		}
+
+		// KFIN: render only the current state - AnimatedContent kept the
+		// previous (foreign) bitmap alive during its fade-out and stale
+		// backdrops flashed between screens
+		val background = currentBackground
+		if (background != null) {
+			BackdropWithBlurBoundary(background)
+		} else {
+			AppThemeBackground()
 		}
 	}
 }
@@ -110,6 +110,9 @@ private fun BackdropWithBlurBoundary(bitmap: ImageBitmap) {
 	var accent by remember(bitmap, context) { mutableStateOf<Color?>(null) }
 	LaunchedEffect(bitmap, context) {
 		accent = withContext(Dispatchers.Default) { extractAccentColor(bitmap) }
+		// KFIN: status bar content recolors against this backdrop
+		org.jellyfin.androidtv.ui.shared.KfinBarStyle.isLight.value =
+			withContext(Dispatchers.Default) { isTopOfBitmapLight(bitmap) }
 	}
 
 	BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -163,4 +166,23 @@ private fun BackdropWithBlurBoundary(bitmap: ImageBitmap) {
 				)
 		)
 	}
+}
+
+// KFIN: average luminance of the top third of the backdrop
+private fun isTopOfBitmapLight(bitmap: ImageBitmap): Boolean {
+	// KFIN: HARDWARE bitmaps cannot be read pixel-by-pixel - convert first
+	val raw = bitmap.asAndroidBitmap()
+	val bmp = if (raw.config == android.graphics.Bitmap.Config.HARDWARE) {
+		raw.copy(android.graphics.Bitmap.Config.ARGB_8888, false)
+	} else raw
+	var sum = 0.0
+	var count = 0
+	val h = bmp.height / 3
+	for (y in 0 until h step 4) {
+		for (x in 0 until bmp.width step 4) {
+			sum += android.graphics.Color.luminance(bmp.getPixel(x, y)).toDouble()
+			count++
+		}
+	}
+	return count > 0 && (sum / count) > 0.5
 }

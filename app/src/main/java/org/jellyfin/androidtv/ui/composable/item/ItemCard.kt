@@ -10,15 +10,21 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import org.jellyfin.androidtv.ui.base.JellyfinTheme
 import org.jellyfin.design.Tokens
@@ -29,41 +35,32 @@ fun ItemCard(
 	modifier: Modifier = Modifier,
 	image: @Composable BoxScope.() -> Unit,
 	overlay: (@Composable BoxScope.() -> Unit)? = null,
-	// KFIN: bottom lip rendered below the poster (captions, progress) -
-	// only used where cards have captions (home rows)
-	lip: (@Composable BoxScope.() -> Unit)? = null,
-	lipColor: Color? = null,
-	lipHeight: androidx.compose.ui.unit.Dp = 26.dp,
-	// KFIN: fixed poster height - the card becomes poster + lip, the lip is
-	// added below and does not shrink the poster
+	// KFIN: fixed poster height - no caption lip, the card is the poster only
 	posterHeight: androidx.compose.ui.unit.Dp,
 	shape: Shape = JellyfinTheme.shapes.medium,
 	focused: Boolean = false,
 	// KFIN: accent color extracted from the poster's lower half - tints the border
 	accentColor: Color? = null,
+	// KFIN: play bubble on focus - media cards only, never persons/seasons
+	showPlayBubble: Boolean = true,
 ) {
-	val focusBorderWidth = with(LocalDensity.current) { 7.toDp() }
-	// KFIN: the focus highlight fades between objects instead of jumping
+		// KFIN: the focus highlight fades between objects instead of jumping
 	val focusAlpha by animateFloatAsState(
 		targetValue = if (focused) 1f else 0f,
 		animationSpec = tween(180),
 		label = "cardFocus"
 	)
-	val borderColor = accentColor ?: Tokens.Color.colorWhite
+	// KFIN: every card wears the same static border - white, 3px, 100%;
+	// selection swaps it for a full-opacity accent border, 5px
+	val restBorder = Color.White.copy(alpha = 1f)
+	val focusBorder = (accentColor ?: Tokens.Color.colorWhite).copy(alpha = 1f)
+	val borderColor = androidx.compose.ui.graphics.lerp(restBorder, focusBorder, focusAlpha)
 
-	// KFIN: border and rounding wrap poster + lip together; the lip eats into
-	// the card height (the poster shrinks), it does not extend the card
 	Column(
 		modifier = modifier
 			.clip(shape)
 			.background(JellyfinTheme.colorScheme.surface, shape)
-			.then(
-				if (focused || focusAlpha > 0f) Modifier.border(
-					focusBorderWidth,
-					borderColor.copy(alpha = 0.8f * focusAlpha),
-					shape
-				) else Modifier
-			)
+			.border((3f + 2f * focusAlpha).dp, borderColor, shape)
 	) {
 		Box(
 			modifier = Modifier
@@ -78,17 +75,29 @@ fun ItemCard(
 					content = overlay
 				)
 			}
+
+			// KFIN: focused card gets a centered play bubble in the selection
+			// color (same 30dp size as the status bar icon buttons)
+			if (showPlayBubble && focusAlpha > 0f) {
+				Box(
+					modifier = Modifier
+						.align(androidx.compose.ui.Alignment.Center)
+						.size(30.dp)
+						.graphicsLayer { alpha = focusAlpha }
+						.background(borderColor, androidx.compose.foundation.shape.CircleShape),
+					contentAlignment = androidx.compose.ui.Alignment.Center
+				) {
+					org.jellyfin.androidtv.ui.base.Icon(
+						imageVector = androidx.compose.ui.graphics.vector.ImageVector.vectorResource(
+							org.jellyfin.androidtv.R.drawable.ic_play
+						),
+						contentDescription = null,
+						tint = Color(0xE6000000),
+						modifier = Modifier.size(16.dp)
+					)
+				}
+			}
 		}
 
-		// KFIN: lip below the poster holding caption + progress
-		if (lip != null) {
-			Box(
-				modifier = Modifier
-					.fillMaxWidth()
-					.height(lipHeight)
-					.background(lipColor ?: Color(0xE60B0D14)),
-				content = lip
-			)
-		}
 	}
 }

@@ -97,6 +97,8 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
 
     private boolean justLoaded = true;
     private boolean gridInitialized = false;
+    // KFIN: survives view recreation when navigating into an item and back
+    private int savedGridPosition = -1;
     private String mLastLoadSignature = null;
     private PosterSize mPosterSizeSetting = PosterSize.MED;
     private ImageType mImageType = ImageType.POSTER;
@@ -212,33 +214,95 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
         if (binding.rowsFragment instanceof org.jellyfin.androidtv.ui.shared.EdgeFadeFrameLayout) {
             org.jellyfin.androidtv.ui.shared.EdgeFadeFrameLayout fade =
                     (org.jellyfin.androidtv.ui.shared.EdgeFadeFrameLayout) binding.rowsFragment;
+            // KFIN: no edge fades on the library grid
             fade.setBottomFadeEnabled(false);
-            fade.setTopFade(Utils.convertDpToPixel(requireContext(), 10) - 18f);
+            fade.setTopFade(0f);
         }
+
+        // KFIN: the description is a focus stop between the grid and the status bar
+        binding.overview.setFocusable(true);
+        binding.overview.setFocusableInTouchMode(true);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            binding.overview.setDefaultFocusHighlightEnabled(false);
+        }
+        binding.overview.setOnFocusChangeListener((v, hasFocus) ->
+                v.setBackgroundColor(hasFocus ? 0x26FFFFFF : android.graphics.Color.TRANSPARENT));
+        binding.overview.setOnKeyListener((v, keyCode, event) -> {
+            if (event.getAction() == android.view.KeyEvent.ACTION_DOWN
+                    && keyCode == android.view.KeyEvent.KEYCODE_DPAD_UP) {
+                // KFIN: up from the description lands on the current library's tab
+                org.jellyfin.androidtv.ui.shared.toolbar.CatalogBarFocus.INSTANCE.focusTab();
+                return true;
+            }
+            return false;
+        });
 
         binding.getRoot().getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
                 binding.getRoot().getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                final int gridTop = (int) (binding.getRoot().getHeight() * 0.55f);
-                final int blockTop = (int) (binding.getRoot().getHeight() * 0.26f);
 
-                // Info block (title → infoRow → overview) sits in the sharp backdrop area
-                ViewGroup.MarginLayoutParams titleLp = (ViewGroup.MarginLayoutParams) binding.title.getLayoutParams();
-                titleLp.topMargin = blockTop;
-                binding.title.setLayoutParams(titleLp);
+                // KFIN: compute on pre-draw so the description's bottom reflects
+                // the new title position - the grid starts right below it
+                binding.getRoot().getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+                    @Override
+                    public boolean onPreDraw() {
+                        if (binding == null) {
+                            binding.getRoot().getViewTreeObserver().removeOnPreDrawListener(this);
+                            return true;
+                        }
+                        binding.getRoot().getViewTreeObserver().removeOnPreDrawListener(this);
+                        // KFIN: the grid starts right below the status bar (30px gap)
+                        final int gridTop;
+                        float barBottom = org.jellyfin.androidtv.ui.shared.toolbar.CatalogBarFocus.INSTANCE.getSettingsButtonBottomY();
+                        if (barBottom >= 0) {
+                            gridTop = (int) (barBottom + 30);
+                        } else {
+                            gridTop = Utils.convertDpToPixel(requireContext(), 80);
+                        }
+                        ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) binding.rowsFragment.getLayoutParams();
+                        // KFIN: the clip boundary sits 15px higher so the fade never covers the cards
+                        lp.topMargin = gridTop - binding.infoRow.getBottom() - 15;
+                        binding.rowsFragment.setLayoutParams(lp);
 
-                binding.getRoot().post(() -> {
-                    if (binding == null) return;
-                    ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) binding.rowsFragment.getLayoutParams();
-                    lp.topMargin = gridTop - binding.infoRow.getBottom(); // keep the grid top exactly at the boundary
-                    binding.rowsFragment.setLayoutParams(lp);
+                        createGrid();
+                        loadGrid();
+                        addTools();
+                        gridInitialized = true;
 
-                    createGrid();
-                    loadGrid();
-                    addTools();
-                    gridInitialized = true;
+                        // KFIN: restore the card that was focused before
+                        // navigating deeper - waits until the adapter actually
+                        // holds that card, otherwise focus lands on the status bar
+                        if (savedGridPosition >= 0 && mGridView != null) {
+                            final int restore = savedGridPosition;
+                            savedGridPosition = -1;
+                            restoreGridFocus(restore, 0);
+                        }
+                        return true;
+                    }
                 });
+            }
+        });
+    }
+
+    // KFIN: focus the exact card we came from, retrying while the grid loads
+    private void restoreGridFocus(int position, int attempts) {
+        if (mGridView == null || mAdapter == null || attempts > 15) return;
+        if (position >= mAdapter.size()) {
+            mGridView.postDelayed(() -> restoreGridFocus(position, attempts + 1), 100);
+            return;
+        }
+        mGridView.setSelectedPosition(position);
+        mGridView.post(() -> {
+            if (mGridView == null) return;
+            androidx.recyclerview.widget.RecyclerView.ViewHolder vh =
+                    mGridView.findViewHolderForAdapterPosition(position);
+            if (vh != null) {
+                vh.itemView.requestFocus();
+            } else if (attempts < 15) {
+                mGridView.postDelayed(() -> restoreGridFocus(position, attempts + 1), 100);
+            } else {
+                mGridView.requestFocus();
             }
         });
     }
@@ -252,6 +316,12 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+
+        // KFIN: remember the focused card so BACK from a details page returns
+        // the cursor to it
+        if (mGridView != null) {
+            savedGridPosition = mGridView.getSelectedPosition();
+        }
 
         BrowseGridTools.INSTANCE.hide();
         binding = null;
@@ -341,12 +411,8 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
             String logoUrl = item.getBaseItem() != null
                     ? imageHelper.getValue().getLogoImageUrl(item.getBaseItem(), 600)
                     : null;
-            if (logoUrl != null) {
-                binding.itemLogo.setVisibility(View.VISIBLE);
-                binding.itemLogo.load(logoUrl, null, null, 2.0, 32);
-            } else {
-                binding.itemLogo.setVisibility(View.GONE);
-            }
+            // KFIN: the library logo is hidden - keep it gone
+            binding.itemLogo.setVisibility(View.GONE);
         } else {
             binding.title.setText("");
             binding.infoRow.removeAllViews();
@@ -393,7 +459,7 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
 
         text += " " + getString(R.string.lbl_from) + " '" + folderName + "' " + getString(R.string.lbl_sorted_by) + " " + getSortOption(mAdapter.getSortBy()).name;
 
-        binding.statusText.setText(text);
+        // KFIN: status line removed from the screen
     }
 
     final private OnItemViewSelectedListener mRowSelectedListener =
@@ -643,11 +709,16 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
         // (e.g. back to home) keep the view alive without onDestroyView
         BrowseGridTools.INSTANCE.hide();
         ContentPrimaryAction.INSTANCE.setPrimary(null);
+        // KFIN: leaving the library - other screens may load their backdrop
+        backgroundService.getValue().setGradientBackground(false);
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        // KFIN: no backdrop while the library is on screen - entering it and
+        // returning from an item must both render plain black
+        backgroundService.getValue().setGradientBackground(true);
         // KFIN: tools were hidden in onPause; re-register them when coming back
         // (e.g. after viewing an item and pressing back)
         addTools();
@@ -834,12 +905,12 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
 
         SortPopup() {
             LinearLayout container = (LinearLayout) getLayoutInflater().inflate(R.layout.kfin_popup_list, binding.rowsFragment, false);
-            // KFIN: glass capsule like the status bar
+            // KFIN: status-bar style matte glass capsule, 90%
             GradientDrawable capsule = new GradientDrawable();
             capsule.setShape(GradientDrawable.RECTANGLE);
-            capsule.setColor(0xCC0B0D14);
+            capsule.setColor(0xFF000000);
             capsule.setCornerRadius(Utils.convertDpToPixel(requireContext(), 24));
-            capsule.setStroke(Utils.convertDpToPixel(requireContext(), 1), 0x33FFFFFF);
+            capsule.setStroke(Utils.convertDpToPixel(requireContext(), 1), 0x24FFFFFF);
             container.setBackground(capsule);
 
             final int hPad = Utils.convertDpToPixel(requireContext(), 16);
@@ -874,8 +945,12 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
                 itemBg.setCornerRadius(pillRadius);
                 itemBg.setStroke(0, 0x00000000);
                 item.setBackground(itemBg);
-                item.setOnFocusChangeListener((v, hasFocus) ->
-                        itemBg.setStroke(hasFocus ? focusedStroke : 0, hasFocus ? 0xB3F8FAFC : 0x00000000));
+                item.setOnFocusChangeListener((v, hasFocus) -> {
+                    // KFIN: watch-button style - 80% white fill, dark text
+                    itemBg.setColor(hasFocus ? 0xFFFFFFFF : 0x00000000);
+                    itemBg.setStroke(hasFocus ? focusedStroke : 0, hasFocus ? 0xFFFFFFFF : 0x00000000);
+                    item.setTextColor(hasFocus ? 0xE6000000 : Color.WHITE);
+                });
 
                 item.setOnClickListener(v -> {
                     mAdapter.setSortBy(option);
@@ -889,8 +964,17 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
         }
 
         void show() {
-            // KFIN: centered below the status bar, like the letter-jump bar
-            popupWindow.showAtLocation(binding.getRoot(), Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, Utils.convertDpToPixel(requireContext(), 76));
+            // KFIN: top edge 20px below the status bar, the menu's axis on the
+            // sort button's axis
+            popupWindow.getContentView().measure(
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+            int width = popupWindow.getContentView().getMeasuredWidth();
+            float centerX = org.jellyfin.androidtv.ui.browsing.BrowseGridTools.INSTANCE.getSortButtonCenterX();
+            float belowY = org.jellyfin.androidtv.ui.browsing.BrowseGridTools.INSTANCE.getSortButtonBottomY();
+            int x = centerX >= 0 ? (int) (centerX - width / 2f) : 0;
+            int y = belowY >= 0 ? (int) (belowY + 20) : Utils.convertDpToPixel(requireContext(), 76);
+            popupWindow.showAtLocation(binding.getRoot(), Gravity.TOP | Gravity.START, x, y);
             if (checkedView != null) checkedView.requestFocus();
         }
     }
@@ -940,11 +1024,12 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
 
         JumplistPopup() {
             PopupEmptyBinding layout = PopupEmptyBinding.inflate(getLayoutInflater(), binding.rowsFragment, false);
-            // KFIN: capsule look matching the status bar
+            // KFIN: status-bar style matte glass, 90%
             GradientDrawable capsule = new GradientDrawable();
             capsule.setShape(GradientDrawable.RECTANGLE);
-            capsule.setColor(0xCC0B0D14);
+            capsule.setColor(0xFF000000);
             capsule.setCornerRadius(Utils.convertDpToPixel(requireContext(), 40));
+            capsule.setStroke(Utils.convertDpToPixel(requireContext(), 1), 0x24FFFFFF);
             layout.emptyPopup.setBackground(capsule);
             popupWindow = new PopupWindow(layout.emptyPopup, WIDTH, HEIGHT, true);
             popupWindow.setOutsideTouchable(true);
@@ -962,8 +1047,10 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
         }
 
         public void show() {
-            // KFIN: letters bar sits right below the status bar
-            int y = Utils.convertDpToPixel(requireContext(), 76);
+            // KFIN: letters bar sits 20px below the status bar (the jump
+            // button's bottom edge), fallback 60dp
+            float jumpBottom = org.jellyfin.androidtv.ui.browsing.BrowseGridTools.INSTANCE.getJumpButtonBottomY();
+            int y = jumpBottom >= 0 ? (int) (jumpBottom + 20) : Utils.convertDpToPixel(requireContext(), 60);
             popupWindow.showAtLocation(binding.getRoot(), Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, y);
             if (mAdapter.getStartLetter() != null && !mAdapter.getStartLetter().isEmpty()) {
                 alphaPicker.focus(mAdapter.getStartLetter().charAt(0));

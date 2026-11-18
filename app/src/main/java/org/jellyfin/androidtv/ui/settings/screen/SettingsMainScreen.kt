@@ -23,7 +23,6 @@ fun SettingsMainScreen() {
 			ListSection(
 				overlineContent = { Text(stringResource(R.string.app_name).uppercase()) },
 				headingContent = { Text(stringResource(R.string.settings)) },
-				captionContent = { Text(stringResource(R.string.settings_description)) },
 			)
 		}
 
@@ -76,7 +75,6 @@ fun SettingsMainScreen() {
 
 		item {
 			ListButton(
-				leadingContent = { Icon(painterResource(R.drawable.ic_jellyfin), contentDescription = null) },
 				headingContent = { Text(stringResource(R.string.pref_about_title)) },
 				onClick = { router.push(Routes.ABOUT) },
 				modifier = Modifier.focusKey(Routes.ABOUT),

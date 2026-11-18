@@ -284,9 +284,9 @@ fun FullDetailsFragment.chooseExternalPlayer() {
 		setPadding(dp(8), dp(8), dp(8), dp(8))
 		val capsule = android.graphics.drawable.GradientDrawable().apply {
 			shape = android.graphics.drawable.GradientDrawable.RECTANGLE
-			setColor(0xCC0B0D14.toInt())
+			setColor(0xFF000000.toInt())
 			cornerRadius = dp(24).toFloat()
-			setStroke(dp(1), 0x1AFFFFFF.toInt())
+			setStroke(dp(1), 0x24FFFFFF)
 		}
 		background = capsule
 	}

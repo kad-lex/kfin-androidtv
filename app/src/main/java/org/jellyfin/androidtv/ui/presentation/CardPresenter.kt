@@ -33,9 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.findViewTreeCompositionContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.leanback.widget.Presenter
@@ -46,35 +44,41 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.constant.ImageType
-import org.jellyfin.androidtv.ui.base.Seekbar
-import org.jellyfin.androidtv.ui.base.SeekbarDefaults
 import org.jellyfin.androidtv.ui.base.Text
+import androidx.compose.ui.unit.sp
+import org.jellyfin.androidtv.ui.base.Badge
+import org.jellyfin.androidtv.ui.base.JellyfinTheme
 import org.jellyfin.androidtv.ui.composable.AsyncImage
 import org.jellyfin.androidtv.ui.composable.item.ItemCard
 import org.jellyfin.androidtv.ui.composable.item.ItemCardBaseItemOverlay
 import org.jellyfin.androidtv.ui.composable.item.ItemPreview
 import org.jellyfin.androidtv.ui.composable.item.rememberPlayedPercentage
 import org.jellyfin.androidtv.ui.shared.extractAccentColor
-import org.jellyfin.androidtv.ui.shared.extractBottomStripColor
 import org.jellyfin.androidtv.ui.shared.loadSmallPosterBitmap
 import org.jellyfin.androidtv.ui.itemhandling.BaseItemDtoBaseRowItem
 import org.jellyfin.androidtv.ui.itemhandling.BaseRowItem
+import org.jellyfin.androidtv.ui.itemhandling.BaseItemPersonBaseRowItem
 import org.jellyfin.androidtv.ui.itemhandling.BaseRowType
 import org.jellyfin.androidtv.ui.itemhandling.GridButtonBaseRowItem
 import org.jellyfin.androidtv.util.ImageHelper
+import org.jellyfin.androidtv.util.apiclient.itemImages
+import org.jellyfin.androidtv.util.sdk.compat.canResume
+import org.jellyfin.sdk.model.api.ImageType as SdkImageType
 import org.jellyfin.androidtv.util.apiclient.JellyfinImage
 import org.jellyfin.androidtv.util.apiclient.getUrl
 import org.jellyfin.androidtv.util.getActivity
-import org.jellyfin.design.Tokens
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.koin.compose.koinInject
 
-class CardPresenter(
+class CardPresenter @JvmOverloads constructor(
 	val showInfo: Boolean,
 	val imageType: ImageType,
 	val staticHeight: Int,
 	val uniformAspect: Boolean,
+	// KFIN: only the home "continue watching" row renders resumable movies
+	// as wide 16:9 backdrop cards; everywhere else they stay 2:3 posters
+	val resumeWide: Boolean = false,
 ) : Presenter() {
 	constructor(showInfo: Boolean, imageType: ImageType, staticHeight: Int) : this(showInfo, imageType, staticHeight, false)
 	constructor(showInfo: Boolean, staticHeight: Int) : this(showInfo, ImageType.POSTER, staticHeight)
@@ -126,11 +130,25 @@ class CardPresenter(
 					imageType = imageType,
 					staticHeight = staticHeight,
 					uniformAspect = uniformAspect,
+					resumeWide = resumeWide,
 				)
 			}
 
 			_focused.value = view.isFocused
 			composeView.onFocusChangeListener = { _, focused -> _focused.value = focused }
+
+			// KFIN: vertical moves between rows always land on the leftmost card;
+			// library grids are excluded (KfinNav checks the parent chain)
+			composeView.setOnKeyListener { v, keyCode, event ->
+				if (event?.action != android.view.KeyEvent.ACTION_DOWN) return@setOnKeyListener false
+				when (keyCode) {
+					android.view.KeyEvent.KEYCODE_DPAD_UP ->
+						org.jellyfin.androidtv.ui.shared.KfinNav.moveVertical(v, false)
+					android.view.KeyEvent.KEYCODE_DPAD_DOWN ->
+						org.jellyfin.androidtv.ui.shared.KfinNav.moveVertical(v, true)
+					else -> false
+				}
+			}
 		}
 
 		fun bind(item: BaseRowItem) {
@@ -153,7 +171,7 @@ private data class BaseRowItemDisplayConfig(
 	val scaleType: ImageView.ScaleType? = null,
 )
 
-private fun BaseRowItem.getDisplayConfig(imageType: ImageType, uniformAspect: Boolean): BaseRowItemDisplayConfig = when (baseRowType) {
+private fun BaseRowItem.getDisplayConfig(imageType: ImageType, uniformAspect: Boolean, resumeWide: Boolean = false): BaseRowItemDisplayConfig = when (baseRowType) {
 	BaseRowType.BaseItem -> {
 		val preferSeriesPoster = this is BaseItemDtoBaseRowItem && preferSeriesPoster
 		val primaryAspectRatio = baseItem?.primaryImageAspectRatio?.toFloat()
@@ -224,13 +242,22 @@ private fun BaseRowItem.getDisplayConfig(imageType: ImageType, uniformAspect: Bo
 				iconRes = R.drawable.ic_folder
 			)
 
-			BaseItemKind.MOVIE, BaseItemKind.VIDEO -> base.copy(
-				aspectRatio = when (imageType) {
-					ImageType.POSTER -> ImageHelper.ASPECT_RATIO_2_3.toFloat()
-					else -> base.aspectRatio
-				},
-				iconRes = R.drawable.ic_clapperboard,
-			)
+			BaseItemKind.MOVIE, BaseItemKind.VIDEO -> {
+				// KFIN: resumable items (continue watching) use a 16:9 backdrop card
+				val resuming = baseItem?.canResume == true && resumeWide
+				base.copy(
+					aspectRatio = when (imageType) {
+						ImageType.POSTER -> if (resuming) ImageHelper.ASPECT_RATIO_16_9.toFloat() else ImageHelper.ASPECT_RATIO_2_3.toFloat()
+						else -> base.aspectRatio
+					},
+					image = if (resuming) {
+						baseItem?.itemImages[SdkImageType.BACKDROP]
+							?: baseItem?.itemImages[SdkImageType.THUMB]
+							?: base.image
+					} else base.image,
+					iconRes = R.drawable.ic_clapperboard,
+				)
+			}
 
 			else -> base
 		}
@@ -303,17 +330,13 @@ private fun CardViewHolderContent(
 	imageType: ImageType,
 	staticHeight: Int,
 	uniformAspect: Boolean,
+	resumeWide: Boolean = false,
 ) {
 	val context = LocalContext.current
 	val localDensity = LocalDensity.current
 
 	val title = remember(item, context) { item?.getCardName(context) }
-	val subtitle = remember(item, context) {
-		item?.getSubText(context)?.takeUnless { sub ->
-			(item as? BaseItemDtoBaseRowItem)?.baseItem?.officialRating == sub
-		}
-	}
-	val displayConfig = remember(item, imageType, uniformAspect) { item?.getDisplayConfig(imageType, uniformAspect) }
+	val displayConfig = remember(item, imageType, uniformAspect, resumeWide) { item?.getDisplayConfig(imageType, uniformAspect, resumeWide) }
 
 	// KFIN: in the browse grid every card must occupy exactly the same cell size,
 	// otherwise leanback lays children out with overlaps and focus search jumps
@@ -350,29 +373,19 @@ private fun CardViewHolderContent(
 		val small = loadSmallPosterBitmap(context, glowUrl) ?: return@LaunchedEffect
 		cardAccent = extractAccentColor(small.asImageBitmap())
 	}
-
-	// KFIN: captions live in the bottom lip for both caption styles -
-	// inside the card (grid tooltips) and below the card (ItemPreview rows)
-	val hasCaption = title != null && item.baseItem != null && (usePreview || item.showCardInfoOverlay)
+	// KFIN: the library gradient follows the focused card; publish its accent
+	// whenever focus lands on it (extraction may have finished long ago)
+	LaunchedEffect(focused, cardAccent) {
+		if (focused) cardAccent?.let { org.jellyfin.androidtv.ui.shared.KfinAccentHolder.color.value = it }
+	}
 
 	val card = @Composable {
 		ItemCard(
 			focused = focused,
 			accentColor = cardAccent,
+			showPlayBubble = item.baseRowType != BaseRowType.Person && item.baseItem?.type != BaseItemKind.SEASON,
 			// KFIN: the lip only exists where cards have captions (home rows) -
 			// library grids have no captions and no lip
-			lip = if (hasCaption) {
-				{
-					lipBox(
-						title = title!!,
-						// KFIN: no episode name as the second line - keeps the lip slim
-						subtitle = if (item.baseItem!!.type == BaseItemKind.EPISODE) null else subtitle,
-						focused = focused
-					)
-				}
-			} else null,
-			lipHeight = size.height * 0.25f,
-			lipColor = if (hasCaption) cardAccent else null,
 			image = {
 				if (image != null) {
 					AsyncImage(
@@ -405,8 +418,33 @@ private fun CardViewHolderContent(
 				}
 			},
 			overlay = {
-				item.baseItem?.let { baseItem ->
-					ItemCardBaseItemOverlay(item = baseItem, footer = null)
+				val base = item.baseItem
+				when {
+					// KFIN: wide (16:9) cards and season posters carry their title as a badge
+					base != null -> {
+						val isWide = kotlin.math.abs(aspectRatio - ImageHelper.ASPECT_RATIO_16_9.toFloat()) < 0.2f
+						val isSeason = base.type == BaseItemKind.SEASON
+						ItemCardBaseItemOverlay(
+							item = base,
+							footer = null,
+							titleBadge = title?.takeIf { isWide || isSeason },
+						)
+					}
+					// KFIN: person cards show the name as a bottom badge
+					item is BaseItemPersonBaseRowItem && title != null -> {
+						Badge(
+							modifier = Modifier
+								.align(Alignment.BottomStart)
+								.padding(horizontal = 6.dp, vertical = 6.dp),
+							minSize = 19.dp,
+							contentPadding = 2.dp,
+							containerColor = Color.Black, // KFIN: unified opaque black
+							contentColor = Color.White,
+							textStyle = JellyfinTheme.typography.badge.copy(fontSize = 10.sp),
+						) {
+							Text(text = title.uppercase(), maxLines = 1)
+						}
+					}
 				}
 			},
 			posterHeight = size.height,
@@ -429,35 +467,5 @@ private fun CardViewHolderContent(
 		)
 	} else {
 		card()
-	}
-}
-
-// KFIN: caption lip content - wide band below the poster: title + subtitle
-@Composable
-private fun BoxScope.lipBox(title: String, subtitle: String?, focused: Boolean) {
-	androidx.compose.foundation.layout.Column(
-		modifier = Modifier
-			.fillMaxSize()
-			.padding(horizontal = 12.dp, vertical = 10.dp)
-	) {
-		Text(
-			text = title.uppercase(),
-			maxLines = 1,
-			overflow = TextOverflow.Ellipsis,
-			color = Tokens.Color.colorWhite,
-			fontWeight = FontWeight.Bold,
-			modifier = Modifier.then(
-				if (focused) Modifier.basicMarquee(iterations = Int.MAX_VALUE, initialDelayMillis = 0) else Modifier
-			),
-		)
-		if (subtitle != null) {
-			androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(4.dp))
-			Text(
-				text = subtitle,
-				maxLines = 1,
-				overflow = TextOverflow.Ellipsis,
-				color = Tokens.Color.colorGrey300,
-			)
-		}
 	}
 }

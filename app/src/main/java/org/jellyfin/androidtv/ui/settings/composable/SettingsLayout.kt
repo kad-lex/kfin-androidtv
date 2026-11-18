@@ -4,7 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,19 +34,11 @@ fun SettingsLayout(
 				bottom = Tokens.Space.spaceMd
 			)
 			.clip(panelShape)
-			.background(Color(0xCC0B0D14))
-			.border(
-				width = 1.dp,
-				brush = Brush.verticalGradient(
-					colors = listOf(
-						Color.White.copy(alpha = 0.10f),
-						Color.White.copy(alpha = 0.05f)
-					)
-				),
-				shape = panelShape
-			)
+			// KFIN: opaque black panel, white 1px outline
+			.background(Color.Black)
+			.border(width = 1.dp, color = Color(0x24FFFFFF), shape = panelShape)
 			.width(350.dp)
-			.fillMaxHeight()
+			.wrapContentHeight()
 			.focusRestorer(),
 		content = content
 	)

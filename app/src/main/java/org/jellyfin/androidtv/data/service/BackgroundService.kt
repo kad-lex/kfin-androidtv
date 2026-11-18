@@ -16,9 +16,14 @@ import kotlinx.coroutines.launch
 import org.jellyfin.androidtv.auth.model.Server
 import org.jellyfin.androidtv.preference.UserPreferences
 import org.jellyfin.androidtv.preference.constant.BackdropBehavior
+import androidx.compose.ui.graphics.toArgb
+import org.jellyfin.androidtv.ui.shared.extractAccentColorFromUrl
 import org.jellyfin.androidtv.util.apiclient.getUrl
 import org.jellyfin.androidtv.util.apiclient.itemBackdropImages
+import org.jellyfin.androidtv.util.apiclient.itemImages
 import org.jellyfin.androidtv.util.apiclient.parentBackdropImages
+import org.jellyfin.androidtv.util.apiclient.parentImages
+import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.imageApi
@@ -52,9 +57,19 @@ class BackgroundService(
 	private var _currentBackground = MutableStateFlow<ImageBitmap?>(null)
 	private var _blurBackground = MutableStateFlow(false)
 	private var _enabled = MutableStateFlow(true)
+	private val _gradientBackground = MutableStateFlow(false)
+	private val _posterAccent = MutableStateFlow<Int?>(null)
+
 	val currentBackground get() = _currentBackground.asStateFlow()
 	val blurBackground get() = _blurBackground.asStateFlow()
 	val enabled get() = _enabled.asStateFlow()
+	// KFIN: library background is a single-color gradient from the poster accent
+	val gradientBackground get() = _gradientBackground.asStateFlow()
+	val posterAccent get() = _posterAccent.asStateFlow()
+
+	fun setGradientBackground(enabled: Boolean) {
+		_gradientBackground.value = enabled
+	}
 
 	/**
 	 * Use all available backdrops from [baseItem] as background.
@@ -69,10 +84,24 @@ class BackgroundService(
 		// Enable blur for backdrops
 		_blurBackground.value = backdropBehavior == BackdropBehavior.BACKDROP_WITH_BLUR
 
+		// KFIN: drop the previous backdrop immediately so a stale image from
+		// another screen never flashes while the new one is loading
+		_currentBackground.value = null
+
 		// Get all backdrop urls
 		val backdropUrls = (baseItem.itemBackdropImages + baseItem.parentBackdropImages)
 			.map { it.getUrl(api) }
 			.toSet()
+
+		// KFIN: poster accent drives the library gradient background
+		val posterUrl = (baseItem.itemImages[ImageType.PRIMARY]
+			?: baseItem.parentImages[ImageType.PRIMARY])?.getUrl(api, maxWidth = 96, maxHeight = 96)
+		scope.launch(Dispatchers.IO) {
+			_posterAccent.value = extractAccentColorFromUrl(context, posterUrl)?.toArgb()
+		}
+
+		// KFIN: no backdrop images in the library grid
+		if (_gradientBackground.value) return
 
 		loadBackgrounds(backdropUrls)
 	}
@@ -91,6 +120,9 @@ class BackgroundService(
 
 		// Disable blur on splashscreen
 		_blurBackground.value = false
+
+		// KFIN: no stale backdrop while the splashscreen loads
+		_currentBackground.value = null
 
 		// Manually grab the backdrop URL
 		val api = jellyfin.createApi(baseUrl = server.address)

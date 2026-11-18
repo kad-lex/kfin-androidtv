@@ -1,7 +1,11 @@
 package org.jellyfin.androidtv.ui.home
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+
 object HomeFocusCoordinator {
-	var isActive = false
+	// KFIN: Compose state so composables reading isActive recompose
+	var isActive by androidx.compose.runtime.mutableStateOf(false)
 		private set
 
 	var isRowsFocused = false

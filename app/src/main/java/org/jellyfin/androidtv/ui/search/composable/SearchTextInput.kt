@@ -78,20 +78,15 @@ fun SearchTextInput(
 					verticalAlignment = Alignment.CenterVertically,
 					modifier = Modifier
 						.clip(RoundedCornerShape(40.dp))
-						.background(Color(0xCC0B0D14))
+						.background(Color.Black)
 						.then(
 							if (focused) Modifier.border(
-								2.dp,
-								Color(0xFFF8FAFC).copy(alpha = 0.7f),
+								1.dp,
+								Color(0x24FFFFFF),
 								RoundedCornerShape(40.dp)
 							) else Modifier.border(
 								1.dp,
-								Brush.verticalGradient(
-									listOf(
-										Color.White.copy(alpha = 0.10f),
-										Color.White.copy(alpha = 0.05f)
-									)
-								),
+								Color(0x24FFFFFF),
 								RoundedCornerShape(40.dp)
 							)
 						)

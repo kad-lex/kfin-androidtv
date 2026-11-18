@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -45,6 +47,8 @@ import org.koin.compose.koinInject
 fun ItemCardBaseItemOverlay(
 	item: BaseItemDto,
 	footer: (@Composable () -> Unit)? = null,
+	// KFIN: continue-watching title shown as a badge above the progress bar
+	titleBadge: String? = null,
 ) = Box(
 	modifier = Modifier
 		.fillMaxSize()
@@ -55,14 +59,41 @@ fun ItemCardBaseItemOverlay(
 		modifier = Modifier.align(Alignment.TopStart),
 	)
 
+	// KFIN: shifted 1px up and 1px right
 	WatchIndicator(
 		item = item,
-		modifier = Modifier.align(Alignment.TopEnd)
+		modifier = Modifier
+			.align(Alignment.TopEnd)
+			.offset { androidx.compose.ui.unit.IntOffset(1, -1) }
 	)
+
+	// KFIN: title badge pinned at a fixed level above the bottom edge so it
+	// sits at the same height with or without the progress bar
+	if (titleBadge != null) {
+		Badge(
+			modifier = Modifier
+				.align(Alignment.BottomStart)
+				.padding(bottom = 12.dp),
+			// KFIN: 15% smaller than before
+			minSize = 19.dp,
+			contentPadding = 2.dp,
+			// KFIN: plain opaque gray substrate - no material effects
+			containerColor = Color.Black,
+			contentColor = Color.White,
+			textStyle = JellyfinTheme.typography.badge.copy(fontSize = 10.sp),
+		) {
+			Text(
+				text = titleBadge.uppercase(),
+				maxLines = 1,
+				// KFIN: widen the substrate by 10px without scaling the text
+				modifier = Modifier.padding(horizontal = 5.dp)
+			)
+		}
+	}
 
 	Column(
 		modifier = Modifier.align(Alignment.BottomCenter),
-		verticalArrangement = Arrangement.spacedBy(Tokens.Space.spaceXs)
+		verticalArrangement = Arrangement.spacedBy(Tokens.Space.space2xs)
 	) {
 		ProgressIndicator(item = item)
 
@@ -127,10 +158,10 @@ private fun WatchIndicator(
 			modifier = modifier,
 			minSize = 18.dp,
 			contentPadding = 2.dp,
-			containerColor = Color(0xCC0B0D14),
+			containerColor = Color(0xE60B0D14), // KFIN: status-bar style, 90%
 			contentColor = Color.White,
 			borderWidth = 1.dp,
-			borderColor = Color(0x1AFFFFFF),
+			borderColor = Color(0x24FFFFFF),
 			content = {
 				Icon(
 					imageVector = ImageVector.vectorResource(R.drawable.ic_watch),
@@ -147,10 +178,10 @@ private fun WatchIndicator(
 			modifier = modifier,
 			minSize = 18.dp,
 			contentPadding = 2.dp,
-			containerColor = Color(0xCC0B0D14),
+			containerColor = Color(0xE60B0D14), // KFIN: status-bar style, 90%
 			contentColor = Color.White,
 			borderWidth = 1.dp,
-			borderColor = Color(0x1AFFFFFF),
+			borderColor = Color(0x24FFFFFF),
 			textStyle = JellyfinTheme.typography.badge.copy(fontSize = 10.sp),
 		) {
 			Text(
@@ -179,7 +210,7 @@ private fun ProgressIndicator(
 				colors = SeekbarDefaults.colors(progressColor = Color(0xFFFF0033)),
 				modifier = Modifier
 					.fillMaxWidth()
-					.height(3.dp)
+					.height(4.dp)
 			)
 		}
 	}

@@ -5,9 +5,10 @@
         <!-- Colors -->
         <item name="android:colorPrimary">@color/grey</item>
         <item name="android:colorPrimaryDark">@color/grey</item>
-        <item name="android:colorAccent">@color/jellyfin_blue</item>
+        <item name="android:colorAccent">@color/kfin_red</item>
         <!-- Background resource or color -->
-        <item name="android:windowBackground">@android:color/transparent</item>
+        <!-- KFIN: consistent black startup background on all Android versions -->
+        <item name="android:windowBackground">@android:color/black</item>
         <item name="defaultBackground">@color/not_quite_black</item>
         <!-- Background color for CardViews -->
         <item name="cardImageBackground">@color/grey</item>
@@ -23,7 +24,8 @@
         <item name="inputDefaultStrokeColor">@color/input_default_stroke</item>
         <item name="inputDefaultHighlightBackground">@color/input_default_highlight_background</item>
         <!-- Default popup menu -->
-        <item name="popupMenuBackground">@color/popup_menu_background</item>
+        <!-- KFIN: status-bar style matte glass -->
+        <item name="popupMenuBackground">@drawable/kfin_popup_background</item>
         <!-- Header text color -->
         <item name="headerTextColor">@color/white</item>
         <!-- Rows content start padding -->
@@ -31,7 +33,10 @@
 
         <!-- Progress Bar -->
         <item name="progressBackground">@color/grey_transparent</item>
-        <item name="progressPrimary">@color/jellyfin_blue</item>
+        <item name="progressPrimary">@color/kfin_red</item>
+        <!-- KFIN: leanback playback overlay progress (the second/HDR player UI) -->
+        <item name="playbackProgressPrimaryColor">@color/kfin_red</item>
+        <item name="playbackProgressSecondaryColor">@color/kfin_red</item>
         <item name="progressSecondary">@color/jellyfin_purple</item>
 
         <!-- Custom Styles for Elements -->
@@ -47,6 +52,9 @@
         <item name="buttonRounding">3dp</item>
         <item name="inputRounding">3dp</item>
         <item name="popupMenuRounding">3dp</item>
+        <!-- KFIN: status-bar style transport buttons in the player overlay -->
+        <item name="playbackControlsButtonStyle">@style/KfinTransportButton</item>
+
 
         <!-- Dim level of non-focus grid items -->
         <item name="overlayDimDimmedLevel">30%</item>
@@ -89,7 +97,14 @@
     </style>
 
     <style name="Theme.Jellyfin.Dialog" parent="Theme.AppCompat.Dialog">
-        <item name="android:windowBackground">@android:color/transparent</item>
+        <!-- KFIN: consistent black startup background on all Android versions -->
+        <item name="android:windowBackground">@android:color/black</item>
         <item name="android:windowAnimationStyle">@null</item>
     </style>
+
+<!-- KFIN: status-bar style transport buttons in the player overlay -->
+<style name="KfinTransportButton">
+    <item name="android:background">@drawable/kfin_transport_button_bg</item>
+    <item name="android:tint">@color/kfin_transport_icon_tint</item>
+</style>
 </resources>

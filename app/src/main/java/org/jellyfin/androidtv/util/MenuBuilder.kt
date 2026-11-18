@@ -6,8 +6,9 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.SubMenu
 import android.view.View
-import android.widget.PopupMenu
+import androidx.appcompat.widget.PopupMenu
 import androidx.annotation.GravityInt
+import org.jellyfin.androidtv.R
 
 class MenuBuilder(
 	private val menu: Menu

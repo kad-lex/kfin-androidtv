@@ -116,7 +116,7 @@ public class MusicFavoritesListFragment extends Fragment implements View.OnKeyLi
         mButtonRow.addView(play);
         play.requestFocus();
 
-        TextUnderButton shuffle = TextUnderButton.create(requireContext(), R.drawable.ic_shuffle, Utils.convertDpToPixel(requireContext(), 35), 2, getString(R.string.lbl_shuffle_all), new View.OnClickListener() {
+        TextUnderButton shuffle = TextUnderButton.create(requireContext(), R.drawable.ic_shuffle, Utils.convertDpToPixel(requireContext(), 35), 2, null, new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 play(mItems, 0, true);

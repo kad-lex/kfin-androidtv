@@ -122,6 +122,15 @@ object BrowsingUtils {
 	)
 
 	@JvmStatic
+	// KFIN: every episode of the series - the details page grids them all
+	fun createSeriesEpisodesRequest(seriesId: UUID) = GetItemsRequest(
+		fields = ItemRepository.itemFields,
+		parentId = seriesId,
+		includeItemTypes = setOf(BaseItemKind.EPISODE),
+		limit = 200,
+	)
+
+	@JvmStatic
 	fun createSeasonsRequest(seriesId: UUID) = GetSeasonsRequest(
 		seriesId = seriesId,
 		fields = ItemRepository.itemFields,

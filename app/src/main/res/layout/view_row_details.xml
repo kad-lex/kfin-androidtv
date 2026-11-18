@@ -54,6 +54,7 @@
         <!-- Top -->
         <TextView
             android:id="@+id/fdTitle"
+            android:textColor="#FFFFFFFF"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:ellipsize="end"
@@ -107,6 +108,8 @@
             android:id="@+id/fdSummaryText"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
             android:ellipsize="end"
             android:fontFamily="sans-serif-light"
             android:layout_marginTop="8dp"
@@ -146,7 +149,7 @@
         <FrameLayout
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_marginTop="48dp"
+            android:layout_marginTop="53dp"
             android:layout_marginEnd="28dp"
             app:layout_constraintBottom_toBottomOf="@id/fdButtonRow"
             app:layout_constraintEnd_toEndOf="parent"
@@ -154,14 +157,15 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_bias="0">
 
+            <!-- KFIN: same slot/size as the carousel and grid logos -->
             <org.jellyfin.androidtv.ui.AsyncImageView
                 android:id="@+id/mainImage"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="86dp"
                 android:layout_gravity="top|end"
-                android:adjustViewBounds="true"
+                android:maxWidth="320dp"
                 android:background="@drawable/shape_card"
-                android:scaleType="centerInside"
+                android:scaleType="fitCenter"
                 tools:srcCompat="@drawable/app_banner" />
         </FrameLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>

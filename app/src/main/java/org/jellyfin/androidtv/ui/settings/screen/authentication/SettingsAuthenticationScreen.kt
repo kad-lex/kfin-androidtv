@@ -127,8 +127,8 @@ fun SettingsAuthenticationScreen(launchedFromLogin: Boolean = false) {
 		}
 
 		if (launchedFromLogin) item {
+			// KFIN: app icon hidden - it does not render correctly here
 			ListButton(
-				leadingContent = { Icon(painterResource(R.drawable.ic_jellyfin), contentDescription = null) },
 				headingContent = { Text(stringResource(R.string.pref_about_title)) },
 				onClick = { router.push(Routes.ABOUT, mapOf("fromLogin" to "true")) },
 				modifier = Modifier.focusKey(Routes.ABOUT)

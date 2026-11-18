@@ -1,9 +1,7 @@
 package org.jellyfin.androidtv.ui.playback.overlay.action
 
 import android.content.Context
-import android.view.Gravity
 import android.view.View
-import android.widget.PopupMenu
 import org.jellyfin.androidtv.R
 import org.jellyfin.androidtv.constant.getQualityProfiles
 import org.jellyfin.androidtv.preference.UserPreferences
@@ -20,7 +18,7 @@ class SelectQualityAction(
 	private val previousQualitySelection = userPreferences[UserPreferences.maxBitrate]
 	private val qualityController = VideoQualityController(previousQualitySelection, userPreferences)
 	private val qualityProfiles = getQualityProfiles(context)
-	private var popup: PopupMenu? = null
+	private var popup: KfinMenuPopup? = null
 
 	init {
 		initializeWithIcon(R.drawable.ic_select_quality)
@@ -34,31 +32,23 @@ class SelectQualityAction(
 	) {
 		videoPlayerAdapter.leanbackOverlayFragment.setFading(false)
 		dismissPopup()
-		popup = PopupMenu(context, view, Gravity.END).apply {
-			qualityProfiles.values.forEachIndexed { i, selected ->
-				menu.add(0, i, i, selected)
-			}
-
-			menu.setGroupCheckable(0, true, true)
-			val currentQualityIndex = qualityProfiles.keys.indexOf(qualityController.currentQuality)
-			if (currentQualityIndex != -1) {
-				menu.getItem(currentQualityIndex)?.let { item ->
-					item.isChecked = true
-				}
-			}
-
-			setOnDismissListener {
+		popup = KfinMenuPopup.show(
+			context = context,
+			anchor = view,
+			items = qualityProfiles.values.toList(),
+			checkedIndex = qualityProfiles.keys.indexOf(qualityController.currentQuality),
+			onSelect = { position ->
+				qualityController.currentQuality = qualityProfiles.keys.elementAt(position)
+				playbackController.refreshStream()
+			},
+			onDismiss = {
 				videoPlayerAdapter.leanbackOverlayFragment.setFading(true)
 				popup = null
-			}
-			setOnMenuItemClickListener { menuItem ->
-				qualityController.currentQuality = qualityProfiles.keys.elementAt(menuItem.itemId)
-				playbackController.refreshStream()
-				dismiss()
-				true
-			}
-		}
-		popup?.show()
+			},
+			// KFIN: 4 columns, same placement as the audio menu (10px above the panel)
+			columns = 4,
+			abovePanelGap = 10
+		)
 	}
 
 	fun dismissPopup() {

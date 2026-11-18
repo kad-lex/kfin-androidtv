@@ -26,6 +26,12 @@ object BrowseGridTools {
 	// sort popup can open on the same axis as the button
 	var sortButtonCenterX by mutableStateOf(-1f)
 		private set
+	// KFIN: bottom edge of the status bar at the sort button
+	var sortButtonBottomY by mutableStateOf(-1f)
+		private set
+	// KFIN: bottom edge of the status bar at the letter-jump button
+	var jumpButtonBottomY by mutableStateOf(-1f)
+		private set
 
 	fun show(fragment: BrowseGridFragment) {
 		this.fragment = fragment
@@ -39,6 +45,7 @@ object BrowseGridTools {
 				contentDescription = fragment.getString(R.string.lbl_sort_by),
 				modifier = Modifier.onGloballyPositioned { coordinates ->
 					sortButtonCenterX = coordinates.boundsInWindow().center.x
+					sortButtonBottomY = coordinates.boundsInWindow().bottom
 				},
 				onClick = { fragment.openSortMenu() }
 			)
@@ -65,6 +72,9 @@ object BrowseGridTools {
 			GlassIconButton(
 				icon = ImageVector.vectorResource(R.drawable.ic_jump_letter),
 				contentDescription = fragment.getString(R.string.lbl_by_letter),
+				modifier = Modifier.onGloballyPositioned { coordinates ->
+					jumpButtonBottomY = coordinates.boundsInWindow().bottom
+				},
 				onClick = { fragment.openJumplist() }
 			)
 		}

@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Rect
 import android.util.AttributeSet
 import android.view.KeyEvent
+import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.FocusInteraction
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.AbstractComposeView
@@ -37,6 +39,7 @@ import org.jellyfin.androidtv.ui.base.LocalTextStyle
 import org.jellyfin.androidtv.ui.base.ProvideTextStyle
 import org.jellyfin.androidtv.ui.base.Text
 import org.jellyfin.androidtv.ui.base.button.ButtonBase
+import org.jellyfin.androidtv.ui.base.button.ButtonColors
 import org.jellyfin.androidtv.ui.base.button.ButtonDefaults
 import org.jellyfin.androidtv.util.MenuBuilder
 import org.jellyfin.androidtv.util.popupMenu
@@ -53,12 +56,14 @@ fun ServerButton(
 	modifier: Modifier = Modifier,
 	interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 	shape: Shape = ButtonDefaults.Shape,
+	colors: ButtonColors = ButtonDefaults.colors(),
 ) {
 	ButtonBase(
 		onClick = onClick,
 		modifier = modifier,
 		interactionSource = interactionSource,
 		shape = shape,
+		colors = colors,
 	) {
 		Row(
 			horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -169,10 +174,18 @@ class ServerButtonView @JvmOverloads constructor(
 			address = { Text(address) },
 			version = { Text(version.orEmpty()) },
 			interactionSource = interactionSource,
-			// Use the old shape as the Android View implementation is only used in legacy UI
-			shape = RoundedCornerShape(3.dp),
+			// KFIN: black pill with a white 3px outline, white fill on focus
+			shape = RoundedCornerShape(40.dp),
+			colors = ButtonDefaults.colors(
+				containerColor = Color.Black,
+				contentColor = Color(0xD9FFFFFF),
+				focusedContainerColor = Color.White,
+				focusedContentColor = Color(0xE6000000),
+			),
 			// New implementation doesn't end up at 51.dp by default so force the old size
-			modifier = Modifier.height(51.dp),
+			modifier = Modifier
+				.height(51.dp)
+				.border(3.dp, Color.White, RoundedCornerShape(40.dp)),
 			// We use our own click handler for the view
 			onClick = {}
 		)

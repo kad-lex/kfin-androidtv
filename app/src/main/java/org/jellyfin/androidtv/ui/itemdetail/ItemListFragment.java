@@ -405,7 +405,7 @@ public class ItemListFragment extends Fragment implements View.OnKeyListener {
             }
 
             if (mBaseItem.isFolder()) {
-                TextUnderButton shuffle = TextUnderButton.create(requireContext(), R.drawable.ic_shuffle, buttonSize, 2, getString(R.string.lbl_shuffle_all), new View.OnClickListener() {
+                TextUnderButton shuffle = TextUnderButton.create(requireContext(), R.drawable.ic_shuffle, buttonSize, 2, null, new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         if (!mItems.isEmpty()) {

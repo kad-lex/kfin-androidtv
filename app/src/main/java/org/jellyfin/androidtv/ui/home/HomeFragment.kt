@@ -77,7 +77,39 @@ class HomeFragment : Fragment() {
 			}
 		}
 
-		val carouselHeight = 280.dp
+		// KFIN: coming back to the home screen (e.g. from a library) the cursor
+		// must sit on the home tab - unless focus legitimately returned to a row
+		val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+		androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+			val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+				if (event == Lifecycle.Event.ON_RESUME) {
+					android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+						val root = view?.rootView
+						val focus = root?.findFocus()
+						val rowsView = rowsFragment?.view
+						var inRows = false
+						var p: android.view.ViewParent? = focus?.parent
+						while (p is android.view.View) {
+							if (p === rowsView) { inRows = true; break }
+							p = p.parent
+						}
+						if (org.jellyfin.androidtv.ui.shared.toolbar.CatalogBarFocus.returnFromDetails) {
+							org.jellyfin.androidtv.ui.shared.toolbar.CatalogBarFocus.returnFromDetails = false
+							rowsFragment?.let { fragment ->
+								fragment.focusCurrentCard()
+							}
+						} else if (focus == null || !inRows) {
+							org.jellyfin.androidtv.ui.shared.toolbar.CatalogBarFocus.focusHome()
+						}
+					}, 150)
+				}
+			}
+			lifecycleOwner.lifecycle.addObserver(observer)
+			onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+		}
+
+		// KFIN: the carousel background ends 100px higher
+		val carouselHeight = with(LocalDensity.current) { (280.dp.toPx() - 100f).toDp() }
 		val watchNowBottomPadding = 22.dp
 		val rowsTopBoundary = carouselHeight - watchNowBottomPadding + with(LocalDensity.current) { (1 - 3).toDp() }
 

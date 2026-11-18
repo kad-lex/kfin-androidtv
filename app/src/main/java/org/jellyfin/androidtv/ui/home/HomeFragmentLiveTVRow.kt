@@ -20,7 +20,7 @@ class HomeFragmentLiveTVRow(
 	private val userRepository: UserRepository,
 ) : HomeFragmentRow {
 	override fun addToRowsAdapter(context: Context, cardPresenter: CardPresenter, rowsAdapter: MutableObjectAdapter<Row>) {
-		val header = HeaderItem(rowsAdapter.size().toLong(), activity.getString(R.string.pref_live_tv_cat))
+		val header = HeaderItem(rowsAdapter.size().toLong(), activity.getString(R.string.pref_live_tv_cat).uppercase())
 		val adapter = ArrayObjectAdapter(GridButtonPresenter())
 
 		// Live TV Guide button

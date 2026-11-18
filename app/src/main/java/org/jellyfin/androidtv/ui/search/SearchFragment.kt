@@ -70,13 +70,18 @@ class SearchFragment : Fragment() {
 
 		Column {
 			// KFIN: the global status bar provides navigation; no second toolbar here
+			// the search row sits 20px below the status bar
+			val searchTop = with(androidx.compose.ui.platform.LocalDensity.current) {
+				val barBottom = org.jellyfin.androidtv.ui.shared.toolbar.CatalogBarFocus.settingsButtonBottomY
+				if (barBottom >= 0) (barBottom + 20).toDp() else 76.dp
+			}
 			Row(
 				horizontalArrangement = Arrangement.spacedBy(12.dp),
 				verticalAlignment = Alignment.CenterVertically,
 				modifier = Modifier
 					.focusRestorer()
 					.focusGroup()
-					.padding(start = 28.dp, end = 28.dp, top = 76.dp)
+					.padding(start = 28.dp, end = 28.dp, top = searchTop)
 			) {
 				if (speechRecognizerAvailability) {
 					SearchVoiceInput(

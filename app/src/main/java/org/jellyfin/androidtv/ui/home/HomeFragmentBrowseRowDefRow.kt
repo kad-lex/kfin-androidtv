@@ -20,7 +20,7 @@ class HomeFragmentBrowseRowDefRow(
 	private val userPreferences by inject<UserPreferences>()
 
 	override fun addToRowsAdapter(context: Context, cardPresenter: CardPresenter, rowsAdapter: MutableObjectAdapter<Row>) {
-		val header = HeaderItem(browseRowDef.headerText)
+		val header = HeaderItem(browseRowDef.headerText.uppercase())
 		val preferParentThumb = userPreferences[UserPreferences.seriesThumbnailsEnabled]
 
 		// Some of these members are probably never used and could be removed
@@ -33,7 +33,11 @@ class HomeFragmentBrowseRowDefRow(
 			QueryType.LiveTvChannel -> ItemRowAdapter(context, browseRowDef.tvChannelQuery, 40, cardPresenter, rowsAdapter)
 			QueryType.LiveTvProgram -> ItemRowAdapter(context, browseRowDef.programQuery, cardPresenter, rowsAdapter)
 			QueryType.LiveTvRecording -> ItemRowAdapter(context, browseRowDef.recordingQuery, browseRowDef.chunkSize, cardPresenter, rowsAdapter)
-			QueryType.Resume -> ItemRowAdapter(context, browseRowDef.resumeQuery, browseRowDef.chunkSize, browseRowDef.preferParentThumb, browseRowDef.isStaticHeight, cardPresenter, rowsAdapter)
+			QueryType.Resume -> {
+				// KFIN: continue-watching tiles are 20% smaller (150 -> 120dp)
+				val resumePresenter = CardPresenter(true, org.jellyfin.androidtv.constant.ImageType.POSTER, 120, false, resumeWide = true)
+				ItemRowAdapter(context, browseRowDef.resumeQuery, browseRowDef.chunkSize, browseRowDef.preferParentThumb, browseRowDef.isStaticHeight, resumePresenter, rowsAdapter)
+			}
 			else -> ItemRowAdapter(context, browseRowDef.query, browseRowDef.chunkSize, browseRowDef.preferParentThumb, browseRowDef.isStaticHeight, cardPresenter, rowsAdapter, browseRowDef.queryType)
 		}
 

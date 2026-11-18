@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+	<!-- KFIN: icon inverts to dark on the white focus fill -->
+	<item android:state_focused="true" android:color="#E6000000" />
+	<item android:color="#D9FFFFFF" />
+</selector>

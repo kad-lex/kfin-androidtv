@@ -1,5 +1,6 @@
 <resources>
     <!-- Base Colors -->
+    <color name="kfin_red">#FF0033</color>
     <color name="jellyfin_blue">#00a4dc</color>
     <color name="jellyfin_purple">#aa5cc3</color>
     <color name="midnight_blue">#031A6B</color>
@@ -41,13 +42,13 @@
     <color name="guide_kids_bg">#32039BE5</color>
 
     <!-- button_default -->
-    <color name="button_default_normal_background">#B3747474</color>
+    <color name="button_default_normal_background">#FF000000</color>
     <color name="button_default_disabled_background">#33747474</color>
     <color name="button_default_highlight_background">#E6CCCCCC</color>
     <color name="button_default_normal_text">#DDDDDD</color>
     <color name="button_default_disabled_text">#686868</color>
     <color name="button_default_highlight_text">#444444</color>
-    <color name="button_default_activated_text">#CC3333</color>
+    <color name="button_default_activated_text">#FF0033</color>
     <color name="button_default_progress_background">#33000000</color>
 
     <!-- input_default -->

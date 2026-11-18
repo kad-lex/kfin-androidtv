@@ -16,6 +16,8 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.view.Gravity;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -223,6 +225,45 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         if (playbackController != null) {
             playbackController.init(new VideoManager(requireActivity(), view, helper), this);
         }
+
+        // KFIN: keep the logo block just above the transport panel
+        binding.getRoot().getViewTreeObserver().addOnGlobalLayoutListener(this::alignTopPanelToTransport);
+    }
+
+    // KFIN: the top panel (logo) bottoms out 8dp above the transport panel
+    private void alignTopPanelToTransport() {
+        if (binding == null || binding.topPanel.getVisibility() != View.VISIBLE) return;
+        View panel = findTransportPanel(binding.getRoot());
+        if (panel == null || binding.topPanel.getHeight() == 0) return;
+        int[] loc = new int[2];
+        panel.getLocationOnScreen(loc);
+        int[] rootLoc = new int[2];
+        binding.getRoot().getLocationOnScreen(rootLoc);
+        int gap = (int) (8 * getResources().getDisplayMetrics().density);
+        int desiredTop = loc[1] - rootLoc[1] - binding.topPanel.getHeight() - gap;
+        if (binding.topPanel.getLayoutParams() instanceof FrameLayout.LayoutParams) {
+            FrameLayout.LayoutParams flp = (FrameLayout.LayoutParams) binding.topPanel.getLayoutParams();
+            // KFIN: logo block at the bottom-left above the transport panel
+            flp.gravity = Gravity.TOP | Gravity.START;
+            flp.leftMargin = (int) (28 * getResources().getDisplayMetrics().density);
+            flp.rightMargin = 0;
+            if (flp.topMargin != desiredTop) {
+                flp.topMargin = desiredTop;
+                binding.topPanel.setLayoutParams(flp);
+            }
+        }
+    }
+
+    private View findTransportPanel(View view) {
+        if (view.getClass().getSimpleName().equals("PlaybackTransportRowView")) return view;
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                View found = findTransportPanel(group.getChildAt(i));
+                if (found != null) return found;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -1257,7 +1298,8 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
             String imageUrl = imageHelper.getValue().getLogoImageUrl(current, 440);
             if (imageUrl != null) {
                 binding.itemLogo.setVisibility(View.VISIBLE);
-                binding.itemTitle.setVisibility(View.GONE);
+                // KFIN: the title stays on the transport panel even with a logo
+                binding.itemTitle.setVisibility(View.VISIBLE);
                 binding.itemLogo.setContentDescription(current.getName());
                 binding.itemLogo.load(imageUrl, null, null, 1.0, 0);
             } else {
