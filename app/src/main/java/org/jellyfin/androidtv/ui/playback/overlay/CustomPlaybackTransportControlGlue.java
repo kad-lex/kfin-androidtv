@@ -343,7 +343,6 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
         return rowPresenter;
     }
 
-    private static final Object KFIN_STYLED_TAG = new Object();
     // leanback stores its ViewHolder in the row view's tag - never touch it;
     // keep our own weak set of roots that already have the layout listener
     private static final java.util.Set<View> STYLED_ROOTS = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
@@ -358,8 +357,6 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
     private static final int KFIN_BTN_BG = 0x99000000; // KFIN: 60% black
     private static final int KFIN_BTN_STROKE = 0x24FFFFFF;
     private static final int KFIN_BTN_FOCUS_BG = 0xCCFFFFFF;
-    private static final int KFIN_BTN_CONTENT = 0xE6000000;
-    private static final int KFIN_BTN_ICON = 0xD9FFFFFF;
 
     private static int dp(Context context, int value) {
         return round(value * context.getResources().getDisplayMetrics().density);

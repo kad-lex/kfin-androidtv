@@ -117,7 +117,7 @@ object KfinNav {
 		}
 	}
 
-	private tailrec fun findHorizontalGrid(view: View): HorizontalGridView? = when (view) {
+	private fun findHorizontalGrid(view: View): HorizontalGridView? = when (view) {
 		is HorizontalGridView -> view
 		is ViewGroup -> (0 until view.childCount).firstNotNullOfOrNull { findHorizontalGrid(view.getChildAt(it)) }
 		else -> null
