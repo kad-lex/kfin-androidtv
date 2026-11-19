@@ -3,6 +3,7 @@ package org.jellyfin.androidtv.di
 import android.content.Context
 import androidx.lifecycle.ProcessLifecycleOwner
 import coil3.ImageLoader
+import coil3.bitmapFactoryMaxParallelism
 import coil3.annotation.ExperimentalCoilApi
 import coil3.gif.AnimatedImageDecoder
 import coil3.gif.GifDecoder
@@ -124,6 +125,9 @@ val appModule = module {
 	single {
 		ImageLoader.Builder(androidContext()).apply {
 			serviceLoaderEnabled(false)
+			// KFIN: cap concurrent bitmap decodes at 2 - on weak TV boxes 4
+			// parallel decodes saturate all cores and drop frames while scrolling
+			bitmapFactoryMaxParallelism(2)
 			logger(CoilTimberLogger(if (BuildConfig.DEBUG) Logger.Level.Warn else Logger.Level.Error))
 
 			components {
