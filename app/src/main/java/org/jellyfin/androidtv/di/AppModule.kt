@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ProcessLifecycleOwner
 import coil3.ImageLoader
 import coil3.bitmapFactoryMaxParallelism
+import coil3.memory.MemoryCache
 import coil3.annotation.ExperimentalCoilApi
 import coil3.gif.AnimatedImageDecoder
 import coil3.gif.GifDecoder
@@ -128,6 +129,10 @@ val appModule = module {
 			// KFIN: cap concurrent bitmap decodes at 2 - on weak TV boxes 4
 			// parallel decodes saturate all cores and drop frames while scrolling
 			bitmapFactoryMaxParallelism(2)
+			// KFIN: pin the memory cache at 25% of heap - Coil auto-shrinks it to
+			// 15% on low-RAM devices (most 1-2 GB TV boxes), causing re-decodes
+			// and GC hitches when scrolling back
+			memoryCache(MemoryCache.Builder().maxSizePercent(androidContext(), 0.25).build())
 			logger(CoilTimberLogger(if (BuildConfig.DEBUG) Logger.Level.Warn else Logger.Level.Error))
 
 			components {
