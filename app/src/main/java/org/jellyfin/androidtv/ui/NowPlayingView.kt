@@ -95,7 +95,7 @@ fun NowPlayingComposable(
 						val progressFillColor = JellyfinTheme.colorScheme.rangeControlFill
 
 						AsyncImage(
-							url = image?.getUrl(api),
+							url = image?.getUrl(api, maxWidth = 320),
 							blurHash = image?.blurHash,
 							placeholder = ContextCompat.getDrawable(LocalContext.current, R.drawable.ic_album),
 							aspectRatio = image?.aspectRatio ?: 1f,

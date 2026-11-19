@@ -62,7 +62,7 @@ fun MainToolbar(
 
 	// Prevent user image to disappear when signing out by skipping null values
 	val currentUser by remember { userRepository.currentUser.filterNotNull() }.collectAsState(null)
-	val userImage = remember(currentUser) { currentUser?.primaryImage?.getUrl(api) }
+	val userImage = remember(currentUser) { currentUser?.primaryImage?.getUrl(api, maxWidth = 256) }
 
 	MainToolbar(
 		userImage = userImage,

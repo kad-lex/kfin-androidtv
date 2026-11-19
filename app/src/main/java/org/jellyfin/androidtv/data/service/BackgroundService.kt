@@ -89,8 +89,10 @@ class BackgroundService(
 		_currentBackground.value = null
 
 		// Get all backdrop urls
+		// KFIN: request FHD instead of the original - the backdrop sits under a
+		// gradient scrim, 4K originals only cost traffic, decode time and RAM
 		val backdropUrls = (baseItem.itemBackdropImages + baseItem.parentBackdropImages)
-			.map { it.getUrl(api) }
+			.map { it.getUrl(api, maxWidth = 1920) }
 			.toSet()
 
 		// KFIN: poster accent drives the library gradient background

@@ -90,7 +90,7 @@ fun initializePreviewView(
 						.background(Color.Black)
 				) {
 					AsyncImage(
-						url = cover.getUrl(api),
+						url = cover.getUrl(api, maxWidth = 640),
 						blurHash = cover.blurHash,
 						aspectRatio = cover.aspectRatio?.toFloat() ?: 1f,
 						scaleType = ImageView.ScaleType.CENTER_INSIDE,

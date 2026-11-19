@@ -338,7 +338,7 @@ fun ProfileButton() {
 	val activity = LocalActivity.current
 
 	val currentUser by remember { userRepository.currentUser.filterNotNull() }.collectAsState(null)
-	val userImage = remember(currentUser) { currentUser?.primaryImage?.getUrl(api) }
+	val userImage = remember(currentUser) { currentUser?.primaryImage?.getUrl(api, maxWidth = 256) }
 	var isProfileFocused by remember { mutableStateOf(false) }
 	val profileScale by animateFloatAsState(if (isProfileFocused) 1.025f else 1f, tween(180), label = "profileScale")
 	val (base, fill, onFill) = barColors()
@@ -385,7 +385,7 @@ fun ProfileClockCapsule() {
 	val activity = LocalActivity.current
 
 	val currentUser by remember { userRepository.currentUser.filterNotNull() }.collectAsState(null)
-	val userImage = remember(currentUser) { currentUser?.primaryImage?.getUrl(api) }
+	val userImage = remember(currentUser) { currentUser?.primaryImage?.getUrl(api, maxWidth = 256) }
 	var isProfileFocused by remember { mutableStateOf(false) }
 
 	var now by remember { mutableStateOf(LocalDateTime.now()) }

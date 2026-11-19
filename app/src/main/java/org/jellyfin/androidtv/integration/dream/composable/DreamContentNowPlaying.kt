@@ -104,7 +104,7 @@ fun DreamContentNowPlaying(
 	) {
 		if (primaryImage != null) {
 			AsyncImage(
-				url = primaryImage.getUrl(api),
+				url = primaryImage.getUrl(api, maxWidth = 640),
 				blurHash = primaryImage.blurHash,
 				scaleType = ImageView.ScaleType.CENTER_CROP,
 				modifier = Modifier

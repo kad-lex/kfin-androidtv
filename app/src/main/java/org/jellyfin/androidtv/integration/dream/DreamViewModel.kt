@@ -135,8 +135,8 @@ class DreamViewModel(
 	}.cancellable()
 
 	private suspend fun BaseItemDto.asLibraryShowcase(): DreamContent.LibraryShowcase? = withContext(Dispatchers.IO) {
-		val logoUrl = itemImages[ImageType.LOGO]?.getUrl(api)
-		val backdropUrl = itemBackdropImages.randomOrNull()?.getUrl(api)
+		val logoUrl = itemImages[ImageType.LOGO]?.getUrl(api, maxWidth = 640)
+		val backdropUrl = itemBackdropImages.randomOrNull()?.getUrl(api, maxWidth = 1920)
 
 		// Require a backdrop
 		if (backdropUrl == null) return@withContext null

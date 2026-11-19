@@ -107,7 +107,7 @@ fun StillWatchingScreen(
 					.align(Alignment.TopStart)
 					.overscan()
 					.height(75.dp),
-				url = logo.getUrl(api),
+				url = logo.getUrl(api, maxWidth = 640),
 				blurHash = logo.blurHash,
 				aspectRatio = logo.aspectRatio ?: 1f,
 			)
@@ -185,7 +185,7 @@ fun StillWatchingOverlay(
 						.height(145.dp)
 						.aspectRatio(thumbnail.aspectRatio ?: 1f)
 						.clip(JellyfinTheme.shapes.extraSmall),
-					url = thumbnail.getUrl(api),
+					url = thumbnail.getUrl(api, maxWidth = 1280),
 					blurHash = thumbnail.blurHash,
 					aspectRatio = thumbnail.aspectRatio ?: 1f,
 				)
