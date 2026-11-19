@@ -344,15 +344,49 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
     }
 
     // leanback stores its ViewHolder in the row view's tag - never touch it;
-    // keep our own weak set of roots that already have the layout listener
+    // keep our own weak set of roots that already have the hierarchy listeners
     private static final java.util.Set<View> STYLED_ROOTS = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
+    private static final java.util.Set<View> STYLING_QUEUED = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
 
-    // KFIN: leanback creates/replaces the control views at arbitrary times, so
-    // restyle on every layout pass instead of relying on one-shot posts
-    private static void installTransportStyler(View root) {
-        root.post(() -> styleTransportButtons(root));
+    // KFIN: leanback creates/replaces the control views at arbitrary times.
+    // Restyle only on structural changes (children added/removed) - a global
+    // layout listener fires on every timer tick and progress update too,
+    // walking 100+ views mid-frame and dropping frames on weak boxes
+    private static void installTransportStyler(final View root) {
+        queueTransportStyling(root);
         if (!STYLED_ROOTS.add(root)) return;
-        root.getViewTreeObserver().addOnGlobalLayoutListener(() -> styleTransportButtons(root));
+        if (root instanceof ViewGroup) attachRestyleListeners(root, (ViewGroup) root);
+    }
+
+    private static void queueTransportStyling(final View root) {
+        synchronized (STYLING_QUEUED) {
+            if (!STYLING_QUEUED.add(root)) return;
+        }
+        root.post(() -> {
+            synchronized (STYLING_QUEUED) {
+                STYLING_QUEUED.remove(root);
+            }
+            styleTransportButtons(root);
+        });
+    }
+
+    private static void attachRestyleListeners(final View root, ViewGroup group) {
+        group.setOnHierarchyChangeListener(new android.view.ViewGroup.OnHierarchyChangeListener() {
+            @Override
+            public void onChildViewAdded(View parent, View child) {
+                if (child instanceof ViewGroup) attachRestyleListeners(root, (ViewGroup) child);
+                queueTransportStyling(root);
+            }
+
+            @Override
+            public void onChildViewRemoved(View parent, View child) {
+                queueTransportStyling(root);
+            }
+        });
+        for (int i = 0; i < group.getChildCount(); i++) {
+            View child = group.getChildAt(i);
+            if (child instanceof ViewGroup) attachRestyleListeners(root, (ViewGroup) child);
+        }
     }
     private static final int KFIN_BTN_BG = 0x99000000; // KFIN: 60% black
     private static final int KFIN_BTN_STROKE = 0x24FFFFFF;
