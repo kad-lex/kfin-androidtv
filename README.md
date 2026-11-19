@@ -1,77 +1,105 @@
-<h1 align="center">Jellyfin for Android TV</h1>
-<h3 align="center">Part of the <a href="https://jellyfin.org">Jellyfin Project</a></h3>
+<h1 align="center">KFIN</h1>
+<h3 align="center">Форк <a href="https://github.com/jellyfin/jellyfin-androidtv">Jellyfin Android TV</a> с переработанным интерфейсом</h3>
 
 ---
 
-<p align="center">
-<img alt="Logo banner" src="https://raw.githubusercontent.com/jellyfin/jellyfin-ux/master/branding/SVG/banner-logo-solid.svg?sanitize=true"/>
-<br/><br/>
-<a href="https://github.com/jellyfin/jellyfin-androidtv">
-<img alt="GPL 2.0 License" src="https://img.shields.io/github/license/jellyfin/jellyfin-androidtv.svg"/>
-</a>
-<a href="https://github.com/jellyfin/jellyfin-androidtv/releases">
-<img alt="Current Release" src="https://img.shields.io/github/release/jellyfin/jellyfin-androidtv.svg"/>
-</a>
-<a href="https://translate.jellyfin.org/projects/jellyfin-android/jellyfin-androidtv/">
-<img alt="Translation Status" src="https://translate.jellyfin.org/widgets/jellyfin-android/-/jellyfin-androidtv/svg-badge.svg"/>
-</a>
-<br/>
-<a href="https://opencollective.com/jellyfin">
-<img alt="Donate" src="https://img.shields.io/opencollective/all/jellyfin.svg?label=backers"/>
-</a>
-<a href="https://features.jellyfin.org">
-<img alt="Feature Requests" src="https://img.shields.io/badge/fider-vote%20on%20features-success.svg"/>
-</a>
-<a href="https://matrix.to/#/+jellyfin:matrix.org">
-<img alt="Chat on Matrix" src="https://img.shields.io/matrix/jellyfin:matrix.org.svg?logo=matrix"/>
-</a>
-<br/>
-<a href="https://play.google.com/store/apps/details?id=org.jellyfin.androidtv">
-<img width="153" alt="Jellyfin on Google Play" src="https://jellyfin.org/images/store-icons/google-play.png"/>
-</a>
-<a href="https://www.amazon.com/gp/aw/d/B07TX7Z725">
-<img width="153" alt="Jellyfin on Amazon Appstore" src="https://jellyfin.org/images/store-icons/amazon.png"/>
-</a>
-<a href="https://f-droid.org/en/packages/org.jellyfin.androidtv/">
-<img width="153" alt="Jellyfin on F-Droid" src="https://jellyfin.org/images/store-icons/fdroid.png"/>
-</a>
-<br/>
-<a href="https://repo.jellyfin.org/releases/client/androidtv/">Download archive</a>
-</p>
+KFIN — это Jellyfin для Android TV с полностью переосмысленным внешним видом: единый тёмный стиль без лишних подложек, акцентные цвета, взятые из постеров, полупрозрачный плеер и внимание к плавности работы на слабом железе.
 
-Jellyfin for Android TV is a Jellyfin client for Android TV, Nvidia Shield, and Amazon Fire TV devices. We welcome all contributions and pull
-requests! If you have a larger feature in mind please open an issue so we can discuss the implementation before you start. 
+Пакет приложения — `org.kfin.androidtv`: устанавливается отдельно и не конфликтует с оригинальным Jellyfin.
 
-## Building
+## Скриншоты
 
-The app uses Gradle and requires the Android SDK. We recommend using Android Studio, which includes all required dependencies, for
-development and building. For manual building without Android Studio make sure a compatible JDK and Android SDK are installed and in your
-PATH, then use the Gradle wrapper (`./gradlew`) to build the project with the `assembleDebug` Gradle task to generate an apk file:
+<!-- СКРИН 1: главный экран (карусель + ряды) -->
+![Главный экран](docs/screenshots/home.png)
 
-```shell
-./gradlew assembleDebug
+<!-- СКРИН 2: библиотека (сетка постеров, статус-бар с капсулами) -->
+![Библиотека](docs/screenshots/library.png)
+
+<!-- СКРИН 3: страница фильма/сериала (описание, кнопки, плашки) -->
+![Страница контента](docs/screenshots/details.png)
+
+<!-- СКРИН 4: сезоны/серии плашками с постерами -->
+![Сезоны и серии](docs/screenshots/seasons.png)
+
+<!-- СКРИН 5: страница актёра -->
+![Страница актёра](docs/screenshots/person.png)
+
+<!-- СКРИН 6: плеер с панелью управления -->
+![Плеер](docs/screenshots/player.png)
+
+<!-- СКРИН 7: меню плеера (качество/дорожки/субтитры) -->
+![Меню плеера](docs/screenshots/player_menu.png)
+
+## Ключевые особенности
+
+### Интерфейс
+
+- **Статус-бар без подложки** — капсулы библиотек, поиск, настройки, часы и пользователь прямо на фоне; в покое чёрные, при фокусе — статичное белое выделение с тёмным содержимым.
+- **Карточки** — белая обводка в покое, акцентный цвет постера при фокусе, кружок воспроизведения по центру; бейджи количества серий и индикации просмотра с 90% непрозрачности.
+- **Страница контента** — серии и сезоны плашками: название слева, описание в две строки с многоточием (плашка не растягивается), портретный постер со скруглением справа.
+- **Страница актёра** — фото фиксированного размера со скруглением, имя справа от фото; сетка актёров 6 в ряд.
+- **Единая геометрия** — заголовок, описание, кнопки, списки и сетки выровнены по общей границе 28dp на всех страницах.
+- **Меню в едином стиле** — чёрные с мягким контуром: настройки, сортировка, контекстное меню (удержание OK), выбор внешнего плеера; без затемнения фона.
+
+### Плеер
+
+- Чёрная панель у нижнего края экрана, все элементы с **60% непрозрачности** (логотип — без прозрачности).
+- Верхний ряд: перемотка, воспроизведение, время; нижний ряд: дорожки, субтитры, качество, скорость, масштаб — кнопки-капсулы с инверсией иконки при фокусе.
+- Название и время над прогресс-баром; меню качества/дорожек/субтитров открываются над панелью фиксированными ячейками.
+- Встроенный движок — **ExoPlayer (Media3)**; внешние плееры (VLC, MX Player, mpv, Vimu) поддерживаются через отдельную кнопку.
+
+### Производительность
+
+- Не более 2 параллельных декодов изображений (Coil) — скролл сеток без пропусков кадров на слабых ТВ-боксах.
+- Memory cache зафиксирован на 25% хипа (без автоурезания на low-RAM устройствах).
+- Серверное уменьшение картинок: бэкдропы до 1920px, превью до 1280px, логотипы до 640px — без 4K-оригиналов.
+- Блюр фона заменён акцентной заливкой, у карточек нет теней и зума — только анимация обводки.
+- Релизные сборки: R8 + сжатие ресурсов (~30 МБ APK).
+
+### Платформа
+
+- minSdk 23 (Android 6+), целевая платформа — Android 11 и новее, приоритет — ТВ-боксы.
+- Совместимость с сервером Jellyfin 10.9+.
+
+## Установка
+
+Скачайте APK из раздела [Releases](https://github.com/kad-lex/kfin-androidtv/releases) и установите на устройство. Для обновлений используется тот же пакет — новые версии ставятся поверх.
+
+## Patch notes
+
+### v0.2.0-rc.2 (pre-release) — первый публичный пререлиз
+
+**Интерфейс**
+- Статус-бар: капсулы библиотек, часы и пользователь без подложки, статичное белое выделение.
+- Карточки: обводка с акцентом постера при фокусе, кружок воспроизведения, бейджи 90% непрозрачности.
+- Страница контента: список серий/сезонов плашками с портретными постерами, описание с многоточием.
+- Страница актёра: фиксированное фото со скруглением, имя справа от фото.
+- Сетка актёров 6 в ряд, выравнивание всего по общей границе 28dp.
+- Плеер: чёрная панель у нижнего края, элементы с 60% непрозрачности (кроме логотипа), кнопки-капсулы, меню над панелью.
+- Меню в едином стиле: чёрные с мягким контуром, без затемнения фона.
+
+**Производительность**
+- Coil: не более 2 параллельных декодов, memory cache 25% хипа.
+- Серверное уменьшение картинок: бэкдропы 1920, превью 1280, логотипы 640.
+- Плеер: стилизация кнопок только при смене состава (без обходов дерева на каждый кадр).
+
+**Исправления**
+- Имя актёра больше не обрезается за фото; у всех актёров одинаковый размер фото.
+- Постеры в плашках сезонов получили видимое скругление (портретный слот с заполнением).
+- Навигация по сетке актёров: движение строго по строкам/столбцам, без диагоналей.
+
+## Сборка из исходников
+
+```bash
+# debug
+./gradlew :app:assembleDebug -Pjellyfin.version=0.2.0
+
+# release (нужен keystore, см. signingConfigs в app/build.gradle.kts)
+./gradlew :app:assembleRelease -Pjellyfin.version=0.2.0
 ```
 
-The task will create an APK file in the `/app/build/outputs/apk/debug` directory. This APK file uses a different app-id from our stable
-builds and can be manually installed to your device.
+Требования: JDK 21, Android SDK.
 
-## Branching
+## Благодарности и лицензия
 
-The `master` branch is the primary development branch and the target for all pull requests. It is **unstable** and may contain breaking
-changes or unresolved bugs. For production deployments and forks, always use the latest `release-x.y.z` branch. Do not base production work
-or long-lived forks on `master`.
-
-Release branches are created at the start of a beta cycle and are kept up to date with each published release. Maintainers will cherry-pick
-selected changes into release branches as needed for backports. These branches are reused for subsequent patch releases.
-
-## Translating
-
-Translations can be improved very easily from our [Weblate](https://translate.jellyfin.org/projects/jellyfin-android/jellyfin-androidtv)
-instance. Look through the following graphic to see if your native language could use some work! We cannot accept changes to translation
-files via pull requests.
-
-<p align="center">
-<a href="https://translate.jellyfin.org/engage/jellyfin-android/">
-<img alt="Detailed Translation Status" src="https://translate.jellyfin.org/widgets/jellyfin-android/-/jellyfin-androidtv/multi-auto.svg"/>
-</a>
-</p>
+KFIN основан на [Jellyfin Android TV](https://github.com/jellyfin/jellyfin-androidtv) и наследует его лицензию [GPL 2.0](LICENSE). Вся команда Jellyfin — авторам апстрима.

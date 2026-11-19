@@ -11,6 +11,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import org.jellyfin.androidtv.BuildConfig
@@ -51,6 +52,27 @@ fun SettingsAboutScreen(launchedFromLogin: Boolean = false) {
 				captionContent = { Text(caption) },
 				onClick = copyAction(ClipData.newPlainText(heading, caption)),
 				modifier = Modifier.focusKey("version")
+			)
+		}
+
+		// KFIN: open the GitHub releases page to check for app updates
+		item {
+			val context = LocalContext.current
+			ListButton(
+				headingContent = { Text(stringResource(R.string.kfin_update_link)) },
+				captionContent = { Text("github.com/kad-lex/kfin-androidtv/releases") },
+				onClick = {
+					val intent = android.content.Intent(
+						android.content.Intent.ACTION_VIEW,
+						android.net.Uri.parse("https://github.com/kad-lex/kfin-androidtv/releases")
+					)
+					try {
+						context.startActivity(intent)
+					} catch (e: android.content.ActivityNotFoundException) {
+						org.jellyfin.androidtv.util.Utils.showToast(context, context.getString(R.string.kfin_update_no_browser))
+					}
+				},
+				modifier = Modifier.focusKey("kfin_update")
 			)
 		}
 

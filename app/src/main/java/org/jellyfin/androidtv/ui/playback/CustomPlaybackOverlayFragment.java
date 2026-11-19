@@ -179,6 +179,14 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         binding = VlcPlayerInterfaceBinding.inflate(inflater, container, false);
         binding.textClock.setVideoPlayer(true);
 
+        // KFIN: inject the LeanbackOverlayFragment programmatically - the old
+        // android:name XML attach walked the view hierarchy for a fragment
+        // manager and could hit the destroyed "content" owner mid-transition
+        if (getChildFragmentManager().findFragmentById(R.id.leanback_fragment) == null) {
+            getChildFragmentManager().beginTransaction()
+                    .replace(R.id.leanback_fragment, new LeanbackOverlayFragment()).commitNow();
+        }
+
         // inject the RowsSupportFragment in the popup container
         if (getChildFragmentManager().findFragmentById(R.id.rows_area) == null) {
             mPopupRowsFragment = new RowsSupportFragment();

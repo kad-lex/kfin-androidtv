@@ -31,9 +31,11 @@
             android:layout_height="match_parent"
             app:use_controller="false" />
 
+        <!-- KFIN: fragment added programmatically in onCreateView - android:name
+             resolves the manager by walking the view hierarchy at attach time,
+             which crashes when the owning destination fragment is mid-transition -->
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/leanback_fragment"
-            android:name="org.jellyfin.androidtv.ui.playback.overlay.LeanbackOverlayFragment"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_gravity="center" />

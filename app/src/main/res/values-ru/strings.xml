@@ -693,4 +693,7 @@
     <string name="truehd">TrueHD</string>
     <string name="eac3_atmos">DD+ Atmos</string>
     <string name="truehd_atmos">TrueHD Atmos</string>
+    <!-- KFIN: about screen - update button -->
+    <string name="kfin_update_link">Проверить обновления</string>
+    <string name="kfin_update_no_browser">На устройстве нет браузера для открытия ссылки</string>
 </resources>
