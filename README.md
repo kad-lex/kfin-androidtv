@@ -1,4 +1,6 @@
-<h1 align="center">KFIN</h1>
+<p align="center">
+<img alt="KFIN" src="docs/kfin_logo.png" width="360"/>
+</p>
 <h3 align="center">Форк <a href="https://github.com/jellyfin/jellyfin-androidtv">Jellyfin Android TV</a> с переработанным интерфейсом</h3>
 
 ---
