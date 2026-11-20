@@ -91,6 +91,12 @@ KFIN — это Jellyfin для Android TV с полностью переосм�
 - Постеры в плашках сезонов получили видимое скругление (портретный слот с заполнением).
 - Навигация по сетке актёров: движение строго по строкам/столбцам, без диагоналей.
 
+### v0.2.0-rc.3 (pre-release)
+
+- Исправлен краш плеера при переходах (`Fragment ... has already been destroyed`).
+- «Проверить обновления» в Настройки → О приложении (открывает страницу релизов на GitHub).
+- README со скриншотами и описанием.
+
 ## Сборка из исходников
 
 ```bash
@@ -106,3 +112,102 @@ KFIN — это Jellyfin для Android TV с полностью переосм�
 ## Благодарности и лицензия
 
 KFIN основан на [Jellyfin Android TV](https://github.com/jellyfin/jellyfin-androidtv) и наследует его лицензию [GPL 2.0](LICENSE). Вся команда Jellyfin — авторам апстрима.
+
+---
+
+<h3 align="center">English</h3>
+
+KFIN is Jellyfin for Android TV with a completely reimagined look: a unified dark style without unnecessary backdrops, accent colors taken from posters, a translucent player, and a focus on smooth performance on low-end hardware.
+
+The application package is `org.kfin.androidtv`: it installs separately and does not conflict with the original Jellyfin app.
+
+## Screenshots
+
+![Home screen](docs/screenshots/home.png)
+![Library](docs/screenshots/library.png)
+![Details page](docs/screenshots/details.png)
+![Seasons and episodes](docs/screenshots/seasons.png)
+![Person page](docs/screenshots/person.png)
+![Player](docs/screenshots/player.png)
+![Player menu](docs/screenshots/player_menu.png)
+
+## Key features
+
+### Interface
+
+- **Home screen carousel** — a full-width strip of featured content with a cinematic backdrop: title logo, a "Watch" button, and a dotted page indicator; the "Continue Watching" row sits right below it.
+- **Backdrop-free status bar** — library capsules, search, settings, clock and user straight on the background; black at rest, static white highlight with dark content on focus.
+- **Cards** — white outline at rest, poster accent color on focus, centered play bubble; episode-count and watched badges at 90% opacity.
+- **Details page** — episodes and seasons as pills: title on the left, two-line description with ellipsis (the pill never stretches), rounded portrait poster on the right.
+- **Person page** — fixed-size rounded photo with the name at its right edge; a 6-per-row cast grid.
+- **Unified geometry** — title, description, buttons, lists and grids all share the same 28dp edge on every page.
+- **Consistent menus** — black with a soft outline: settings, sorting, context menu (long-press OK), external player picker; no background dimming.
+
+### Player
+
+- Black panel at the bottom edge of the screen, all elements at **60% opacity** (the logo stays opaque).
+- Top row: rewind, play/pause, fast-forward, time; bottom row: audio tracks, subtitles, quality, speed, zoom — capsule buttons with icon inversion on focus.
+- Title and time above the progress bar; quality/track/subtitle menus open above the panel with fixed-size cells.
+- Built-in engine — **ExoPlayer (Media3)**; external players (VLC, MX Player, mpv, Vimu) are supported via a dedicated button.
+
+### Performance
+
+- At most 2 parallel image decodes (Coil) — grid scrolling without dropped frames on weak TV boxes.
+- Memory cache pinned at 25% of the heap (no auto-shrinking on low-RAM devices).
+- Server-side image scaling: backdrops down to 1920px, thumbnails to 1280px, logos to 640px — no 4K originals.
+- Background blur replaced with an accent fill; no card shadows or zoom — border animation only.
+- Release builds: R8 + resource shrinking (~30 MB APK).
+
+### Platform
+
+- minSdk 23 (Android 6+), target platform — Android 11 and newer, with a focus on TV boxes.
+- Compatible with Jellyfin server 10.9+.
+
+## Installation
+
+Download the APK from the [Releases](https://github.com/kad-lex/kfin-androidtv/releases) section and install it on your device. Updates install on top using the same package.
+
+## Patch notes
+
+### v0.2.0-rc.3 (pre-release)
+
+- Fixed a player crash on transitions (`Fragment ... has already been destroyed`).
+- "Check for updates" in Settings → About (opens the GitHub releases page).
+- README with screenshots and description.
+
+### v0.2.0-rc.2 (pre-release) — first public pre-release
+
+**Interface**
+- Status bar: library capsules, clock and user without backdrops, static white highlight.
+- Cards: poster accent outline on focus, play bubble, 90%-opacity badges.
+- Details page: episodes/seasons list as pills with portrait posters, ellipsis description.
+- Person page: fixed-size rounded photo, name at the photo's right edge.
+- 6-per-row cast grid, everything aligned to the common 28dp edge.
+- Player: black panel at the bottom edge, 60% opacity elements (except the logo), capsule buttons, menus above the panel.
+- Consistent menus: black with a soft outline, no background dimming.
+
+**Performance**
+- Coil: max 2 parallel decodes, memory cache at 25% heap.
+- Server-side image scaling: backdrops 1920, thumbnails 1280, logos 640.
+- Player: buttons restyled only when the layout structure changes (no per-frame tree walks).
+
+**Fixes**
+- Actor names no longer clipped behind the photo; all actors get the same photo size.
+- Season pill posters got visible rounding (portrait slot with fill).
+- Cast grid navigation: strictly row/column movement, no diagonals.
+
+## Building from source
+
+```bash
+# debug
+./gradlew :app:assembleDebug -Pjellyfin.version=0.2.0
+
+# release (a keystore is required, see signingConfigs in app/build.gradle.kts)
+./gradlew :app:assembleRelease -Pjellyfin.version=0.2.0
+```
+
+Requirements: JDK 21, Android SDK.
+
+## Credits and license
+
+KFIN is based on [Jellyfin Android TV](https://github.com/jellyfin/jellyfin-androidtv) and inherits its [GPL 2.0](LICENSE) license. All credit for the upstream goes to the Jellyfin team.
